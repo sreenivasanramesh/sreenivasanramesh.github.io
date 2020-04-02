@@ -3,7 +3,7 @@
 
 title: Sreenivasan Ramesh
 description: My personal blog. # this means to ignore newlines until "baseurl:"
-baseurl: "/blog" # the subpath of your site, e.g. /blog
+baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 
 
@@ -16,9 +16,10 @@ author-avatar: site/avatar.jpg
 #-------------------------------
 # Contact links
 github: https://github.com/sreenivasanramesh
+linkedin: https://linkedin.com/in/sreenivasanramesh
 facebook:  https://facebook.com/sreenivasan.ramesh # Add your Facebook handle
 twitter:   https://twitter.com/ # Add your Facebook handle
-instagram: https://www.instagram.com/sreenivasan.ramesh # Add your Facebook handle
+instagram: https://instagram.com/sreenivasan.ramesh # Add your Facebook handle
 
 
 #-------------------------------
