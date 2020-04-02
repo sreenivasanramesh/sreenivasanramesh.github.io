@@ -26,6 +26,18 @@
   <div class="widget widget-social">
     <h3 class="widget-title">Subscribe & Follow</h3>
     <ul class="social-profiles list-reset">
+      {% if site.github %}
+      <li class="social-profiles-item">
+        <a href="{{ site.github }}" class="social-profiles-link"><i class="ion ion-logo-github"></i></a>
+      </li>
+      {% else %} {% endif %}
+
+      {% if site.linkedin %}
+      <li class="social-profiles-item">
+        <a href="{{ site.linkedin }}" class="social-profiles-link"><i class="ion ion-logo-linkedin"></i></a>
+      </li>
+      {% else %} {% endif %}
+
       {% if site.facebook %}
       <li class="social-profiles-item">
         <a href="{{ site.facebook }}" class="social-profiles-link"><i class="ion ion-logo-facebook"></i></a>
@@ -52,6 +64,21 @@
     </ul>
   </div>
 
+
+  <div class="widget widget-tags">
+    <h3 class="widget-title">Tag Cloud</h3>
+    {% capture site_tags %}{% for tag in site.tags %}{{ tag | first }}{% unless forloop.last %},{% endunless %}{% endfor %}{%
+    endcapture %} {% assign tag_words = site_tags | split:',' | sort %}
+    <ul class="tag-list list-reset">
+    {% for item in (0..site.tags.size) %}{% unless forloop.last %}
+      {% capture this_word %}{{ tag_words[item] | strip_newlines }}{% endcapture %}
+        <li class="tag-item"><a href="{{ site.baseurl }}/tags#{{ this_word | cgi_escape }}" class="tag">{{ this_word }}</a></li>
+      {% endunless %}
+    {% endfor %}
+    </ul>
+  </div>
+
+  
   <div class="widget widget-newsletter">
     <h3 class="widget-title">Newsletter</h3>
     <div class="newsletter-subtitle">Get Interesting News</div>
@@ -79,17 +106,5 @@
   </div>
   {% endif %}
 
-  <div class="widget widget-tags">
-    <h3 class="widget-title">Tag Cloud</h3>
-    {% capture site_tags %}{% for tag in site.tags %}{{ tag | first }}{% unless forloop.last %},{% endunless %}{% endfor %}{%
-    endcapture %} {% assign tag_words = site_tags | split:',' | sort %}
-    <ul class="tag-list list-reset">
-    {% for item in (0..site.tags.size) %}{% unless forloop.last %}
-      {% capture this_word %}{{ tag_words[item] | strip_newlines }}{% endcapture %}
-        <li class="tag-item"><a href="{{ site.baseurl }}/tags#{{ this_word | cgi_escape }}" class="tag">{{ this_word }}</a></li>
-      {% endunless %}
-    {% endfor %}
-    </ul>
-  </div>
   
 </aside> <!-- /.sidebar -->
