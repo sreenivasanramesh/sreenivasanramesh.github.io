@@ -26,9 +26,8 @@ When training a network with multiple layers, it was observed that the ratio of 
 
 ![]({{site.baseurl}}/img/posts/lamb-lars/table1.png)
 
-************ put image here vasan ************
+$$R_t = {||W^l_t|| \over ||G^l_t||}$$
 
-*********formula 
 
 This ratio is termed the “trust ratio” (Rt) and can be interpreted as an approximation of the inverse of the Lipschitz constant of the gradient, and how much we “trust” a layer to change its weights during a single update. Another observation was that a learning rate optimal for the final layer, makes the first layer diverge.
 
@@ -37,7 +36,7 @@ This ratio is termed the “trust ratio” (Rt) and can be interpreted as an app
 
 This key observation led You, et. al. to propose Layer-wise Adaptive Rate Scaling (LARS) - using local adaptive learning rates for each layer, where the learning rate (η) is updated using the “trust coefficient”. Allowing for weight decay, we get this expression for learning rate:
 
-**************formula
+$$\eta = \eta(global) * {||W^l_t|| \over ||G^l_t|| + \beta||W^l_t||}$$
 
 Each layer has a unique learning rate, and the trust ratio changes during every iteration allowing for adaptive scaling at runtime. Whereas Facebook’s approach was able to scale AlexNet to a batch size of 1024, LARS was able to push the batch size up to 8k, without any performance degradation. LARS was also able to scale ImageNet to a batch size of 32k, with warmup, where previous approaches could scale only up to 8k. Compared to the state of the art (goyal et. al.), LARS has a constant top 1% error rate on ImageNet with batch sizes of up to 32k.
 
@@ -45,15 +44,14 @@ Each layer has a unique learning rate, and the trust ratio changes during every 
 ### LAMB - Layer-wise Adaptive Moments optimizer for Batch training
 
 
-Using LARS, ResNet-50 can be trained in a few minutes. However, this performance of LARS is not consistent across training for different tasks, such as NLP tasks like BERT or SQuAD. To tackle this problem, Layer-Wise Adaptive Moments optimizer for Batch training (LAMB) was designed, which modifies LARS in the following ways:
-
-* The denominator of the trust coefficient trust ratio is slightly modified to be .................
-
-**||𝐺& + 𝛽𝑊&||. fix this vasan**
+Using LARS, ResNet-50 can be trained in a few minutes. However, this performance of LARS is not consistent across training for different tasks, such as NLP tasks like BERT or SQuAD. To tackle this problem, Layer-Wise Adaptive Moments optimizer for Batch training (LAMB) was designed, which modifies LARS in the following ways -
 
 * The trust ratio is allowed to have a maximum value of 10.
 
 * It uses Adams weighted update rule, instead of Stochastic Gradient Descent.
+
+* The denominator of the trust coefficient trust ratio is slightly modified to be 
+$$||G^l_t|| + \beta||W^l_t||$$.
 
 These changes allow LAMB to have adaptive element wise weight decay, and layer wise correction/normalization. This allows LAMB to perform better than LARS. Whereas LARS diverges at a batch size of 16k on BERT, LAMB is able to scale to 32k while having a better F1 score compared to LARS. LAMB also works for ImageNet/ResNet-50 raining, where it beat out other optimizers [goyal et al], and LAMB has helped Google achieve state of the art results on GLUE, RACE and SQuAD benchmarks.
 
