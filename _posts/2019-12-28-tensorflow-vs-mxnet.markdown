@@ -2,7 +2,7 @@
 layout: post
 title:  TensorFlow vs MxNet
 date:   2019-12-28
-image:  posts/tf-vs-mxnet/tf_vs_mxnet.png
+image:  img/posts/tf-vs-mxnet/tf_vs_mxnet.png
 tags:   [Deep-Learning, TensorFlow, mxNet, Paper-review]
 ---
 TensorFlow and MxNet are the two most widely used deep learning frameworks in the industry and have support for production-ready deployments. They also have out of the box support for serving models, batch serving, support for mobile, and allow for dynamic model changes with little or no downtime. Latency is imperative in production, and these two frameworks provide excellent support for production ready models. PyTorch is another widely used framework, which I will go over in its own post as features such as support for quantization and mobile are still experimental as of PyTorch 1.4.

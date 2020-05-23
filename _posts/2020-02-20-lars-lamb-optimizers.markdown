@@ -2,7 +2,7 @@
 layout: post
 title:  LARS and LAMB Optimizers
 date:   2020-02-20
-image:  posts/lamb-lars/non_convex.png
+image:  img/posts/lamb-lars/non_convex.png
 tags:   [Deep-Learning, LARS, LAMB, Optimizers, Paper-review]
 ---
 
