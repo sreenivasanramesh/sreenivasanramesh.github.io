@@ -1,6 +1,6 @@
 ---
 layout: page
-title: About
+title: Sreenivasan Ramesh
 image: img/site/cover.jpg
 permalink: /about/
 ---
