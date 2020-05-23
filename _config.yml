@@ -2,14 +2,15 @@
 # General Site Settings
 
 title: Sreenivasan Ramesh
-description: Personal blog. # this means to ignore newlines until "baseurl:"
+description: Welcome to my personal blog. I'm Sreenivasan Ramesh - a graduate Computer Science student at ASU. # this means to ignore newlines until "baseurl:"
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://sreenivasanramesh.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 
 
 #-------------------------------
 # About Section
-author-name:   Sreenivasan Ramesh
+author: "Sreenivasan Ramesh"
+author-name:   "Sreenivasan Ramesh"
 author-avatar: img/site/avatar.jpg
 
 
@@ -18,7 +19,7 @@ author-avatar: img/site/avatar.jpg
 github: https://github.com/sreenivasanramesh
 linkedin: https://linkedin.com/in/sreenivasanramesh
 #facebook:  https://facebook.com/ # Add your Facebook handle
-twitter:   https://twitter.com/ # Add your Facebook handle
+twitter:   https://twitter.com/sreenivasan_ # Add your Facebook handle
 #instagram: https://instagram.com/sreenivasan.ramesh # Add your Facebook handle
 
 
