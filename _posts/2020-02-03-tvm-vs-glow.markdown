@@ -2,7 +2,7 @@
 layout: post
 title:  Deep Learning Compilers - TVM vs Glow
 date:   2020-02-03
-image:  img/posts/tvm-glow/tvm_glow.png
+image:  img/posts/tvm-glow/tvm_glow.svg
 tags:   [Deep-Learning, TVM, Glow, Compilers, Paper-review]
 ---
 
