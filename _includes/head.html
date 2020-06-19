@@ -8,12 +8,36 @@
 
 
   <link rel="canonical" href="{{ page.url | replace:'index.html','' | absolute_url }}">
-  <link rel="alternate" type="application/rss+xml" title="{{ site.title | escape }}" href="{{ "/feed.xml" | relative_url }}">
+  <link rel="alternate" type="application/rss+xml" title="{{ site.title | escape }}" href="{{ '/feed.xml' | relative_url }}">
 
   <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css?family=Nunito:400,700" rel="stylesheet">
+  <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css?family=Nunito:400,700"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+  />
+  <noscript>
+      <link
+          href="https://fonts.googleapis.com/css?family=Nunito:400,700"
+          rel="stylesheet"
+          type="text/css"
+      />
+  </noscript>
   <!-- Ionicons -->
-  <link href="{{ site.baseurl }}/ionicons/css/ionicons.min.css" rel="stylesheet">
+  <link
+      rel="preload"
+      href="https://unpkg.com/ionicons@4.2.2/dist/css/ionicons.min.css"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+  />
+  <noscript>
+      <link
+          href="https://unpkg.com/ionicons@4.2.2/dist/css/ionicons.min.css"
+          rel="stylesheet"
+          type="text/css"
+      />
+  </noscript>
 
 
 
