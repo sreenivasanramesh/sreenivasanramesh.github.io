@@ -6,6 +6,16 @@ image:  img/posts/lamb-lars/non_convex.png
 tags:   [Deep-Learning, LARS, LAMB, Optimizers, Paper-review]
 ---
 
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+  }
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+
 
 Parallelization schemes in Model Parallelism is problematic as sequential layers being parallelized across different accelerators leads to dependencies in the forward and backward passes. This naïve model parallel strategy leads to low utilization of resources as you use only one accelerator at each level, and the parallel efficiency is 1/P. One solution is to have a pipeline or bubble-based parallelism like GPipe [3]. Another approach is to have domain parallelism, which is mixed model/data parallelism [4]. We see that most approaches in use today require data parallelism, and one of the best ways to scale data parallel approaches is by parallelizing the data, i.e. increasing the batch size.
 
