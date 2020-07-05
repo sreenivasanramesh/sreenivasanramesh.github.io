@@ -9,4 +9,4 @@ Welcome to my personal blog. I'm Sreenivasan Ramesh - a graduate Computer Scienc
 
 
 ### Resume
-<object data="/img/SreenivasanRameshResume.pdf" width="1000" height="1000" type='application/pdf'></object>
+<object data="/img/SreenivasanRamesh-Resume.pdf" width="1000" height="1000" type='application/pdf'></object>
