@@ -422,10 +422,26 @@
   };
   setWoloProgress(0, false);
 
-  // synthesized "wo-lo-lo" chant (WebAudio, no sample). triggered by typing,
-  // which counts as user activation, so autoplay policy allows it.
-  let audioCtx;
+  // wololo sound: plays assets/Wololo.mp3, falls back to a synthesized chant
+  // if the file is missing or playback is blocked. triggered by typing, which
+  // counts as user activation, so autoplay policy allows it.
+  let woloAudio;
   const playWololo = () => {
+    try {
+      if (!woloAudio) {
+        woloAudio = new Audio("assets/Wololo.mp3");
+        woloAudio.preload = "auto";
+        woloAudio.volume = 0.55;
+      }
+      woloAudio.currentTime = 0;
+      woloAudio.play().catch(playWololoSynth);
+    } catch (e) {
+      playWololoSynth();
+    }
+  };
+
+  let audioCtx;
+  const playWololoSynth = () => {
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") audioCtx.resume();
