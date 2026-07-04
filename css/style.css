@@ -319,6 +319,15 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
   max-width: 38ch;
 }
 .about__offline .serif { color: var(--accent); font-size: 1.1em; }
+/* the Wololo word doubles as the cheat-code progress meter */
+.about__offline .wolo-word { color: var(--ink-dim); }
+.wolo-ltr { transition: color 0.35s var(--ease-out); }
+.wolo-ltr.lit { color: var(--accent); }
+.wolo-ltr.next { animation: wolo-blink 1.5s ease-in-out infinite; }
+@keyframes wolo-blink {
+  0%, 100% { color: var(--ink-dim); }
+  50% { color: var(--accent); }
+}
 .about__offline-label {
   display: block;
   font-family: var(--font-mono);
@@ -945,6 +954,7 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
   html { scroll-behavior: auto; }
   .grain, .hero__scroll-line::after, .nav__dot { animation: none; }
   .toss-peek, .wololo-wash, .wololo-toast, .cheat-runner, .glyph-drop { display: none; }
+  .wolo-ltr.next { animation: none; color: var(--accent); }
   .marquee__track { animation: none; }
   .ltr { animation: none; transform: none; }
   [data-reveal] {

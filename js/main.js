@@ -395,6 +395,33 @@
     `<circle cx="39" cy="16" r="4.2" fill="#14130f"/><circle cx="39" cy="16" r="1.6" fill="#eae7df"/>` +
     `</svg>`;
 
+  // the "Wololo." word in About doubles as a typing-progress hint:
+  // the next expected letter blinks, typed letters lock to the accent color
+  const woloWord = document.querySelector(".wolo-word");
+  const woloLtrs = [];
+  if (woloWord) {
+    const txt = woloWord.textContent;
+    woloWord.setAttribute("aria-label", txt);
+    woloWord.textContent = "";
+    [...txt].forEach((ch) => {
+      const s = document.createElement("span");
+      s.textContent = ch;
+      s.setAttribute("aria-hidden", "true");
+      if (/[a-z]/i.test(ch)) {
+        s.className = "wolo-ltr";
+        woloLtrs.push(s);
+      }
+      woloWord.appendChild(s);
+    });
+  }
+  const setWoloProgress = (n, done) => {
+    woloLtrs.forEach((s, i) => {
+      s.classList.toggle("lit", done || i < n);
+      s.classList.toggle("next", !done && i === n);
+    });
+  };
+  setWoloProgress(0, false);
+
   const runCheat = (variant, label, svg, lifeMs) => {
     const d = document.createElement("div");
     d.className = `cheat-runner cheat-runner--${variant}`;
@@ -406,6 +433,17 @@
   window.addEventListener("keydown", (e) => {
     if (e.key.length !== 1) return;
     typed = (typed + e.key.toLowerCase()).slice(-30);
+    // hint progress: longest suffix of the buffer that is a prefix of "wololo"
+    let woloProg = 0;
+    for (let n = 6; n > 0; n--) {
+      if (typed.endsWith("wololo".slice(0, n))) { woloProg = n; break; }
+    }
+    if (woloProg === 6) {
+      setWoloProgress(6, true);
+      setTimeout(() => setWoloProgress(0, false), 1500);
+    } else {
+      setWoloProgress(woloProg, false);
+    }
     if (typed.endsWith("wololo")) {
       typed = "";
       accentIdx = 1 - accentIdx;
