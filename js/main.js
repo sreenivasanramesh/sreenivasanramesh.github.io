@@ -422,6 +422,44 @@
   };
   setWoloProgress(0, false);
 
+  // synthesized "wo-lo-lo" chant (WebAudio, no sample). triggered by typing,
+  // which counts as user activation, so autoplay policy allows it.
+  let audioCtx;
+  const playWololo = () => {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const t0 = audioCtx.currentTime + 0.02;
+      const master = audioCtx.createGain();
+      master.gain.value = 0.13;
+      master.connect(audioCtx.destination);
+      const syllable = (t, f0, formFrom, formTo, dur) => {
+        const osc = audioCtx.createOscillator();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(f0, t);
+        osc.frequency.linearRampToValueAtTime(f0 * 0.97, t + dur);
+        const formant = audioCtx.createBiquadFilter();
+        formant.type = "bandpass";
+        formant.Q.value = 4;
+        formant.frequency.setValueAtTime(formFrom, t);
+        formant.frequency.exponentialRampToValueAtTime(formTo, t + dur * 0.55);
+        const lp = audioCtx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = 1300;
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(1, t + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(formant); formant.connect(lp); lp.connect(g); g.connect(master);
+        osc.start(t);
+        osc.stop(t + dur + 0.05);
+      };
+      syllable(t0, 165, 320, 780, 0.34);         // wo
+      syllable(t0 + 0.3, 220, 520, 900, 0.3);    // LO
+      syllable(t0 + 0.58, 185, 500, 820, 0.46);  // lo
+    } catch (e) { /* no audio, no problem */ }
+  };
+
   const runCheat = (variant, label, svg, lifeMs) => {
     const d = document.createElement("div");
     d.className = `cheat-runner cheat-runner--${variant}`;
@@ -456,6 +494,7 @@
         }
         runCheat("monk", "wololo", MONK_SVG, 7000);
       }
+      playWololo();
     } else if (typed.endsWith("how do you turn this on")) {
       typed = "";
       if (!reduceMotion) runCheat("car", "vroom", CAR_SVG, 4300);
