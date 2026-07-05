@@ -1081,6 +1081,9 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
   .job__row { grid-template-columns: 2rem minmax(0, 1fr) auto 1.25rem; }
   .job__role { display: none; }
   .job__body-inner p { padding-left: 3rem; }
+  /* keep the footer critters apart on narrow screens */
+  .shai { left: 12%; }
+  .waldo { left: 78%; }
 }
 
 /* ---------- reduced motion ---------- */

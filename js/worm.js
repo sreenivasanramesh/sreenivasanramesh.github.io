@@ -452,11 +452,19 @@
 
   opener.addEventListener("click", openGame);
   closeBtn.addEventListener("click", close);
+  // touch devices: the whole overlay is the jump button, × / ESC to leave.
+  // fine pointers: canvas jumps, clicking the backdrop still closes.
+  const coarsePointer = window.matchMedia("(hover: none), (pointer: coarse)").matches;
   modal.addEventListener("pointerdown", (e) => {
-    if (e.target === modal) close();          // click the backdrop to leave
+    if (e.target.closest(".worm-modal__close, .worm-modal__mute")) return;
+    if (coarsePointer || e.target === canvas) {
+      e.preventDefault();
+      jump();
+      return;
+    }
+    if (e.target === modal) close();          // desktop: click the backdrop to leave
   });
-  canvas.addEventListener("pointerdown", (e) => { e.preventDefault(); jump(); });
-  canvas.addEventListener("pointerup", () => { worm.holding = false; });
+  modal.addEventListener("pointerup", () => { worm.holding = false; });
   window.addEventListener("keydown", onKey);
   window.addEventListener("keyup", onKeyUp);
 
