@@ -290,23 +290,18 @@
       baseRot: (Math.random() - 0.5) * 10,
       dragging: false, tx: 0, ty: 0,
     };
+    // every card lands somewhere in the upper-right quadrant; overlap is fine
+    const dest = bias || { x: 0.62 + Math.random() * 0.26, y: 0.16 + Math.random() * 0.26 };
     if (!reduceMotion) {
-      // toss toward the bias point (or a spot near the viewport center)
-      const destX = bias
-        ? window.innerWidth * bias.x - w / 2 + (Math.random() - 0.5) * 60
-        : cx + (Math.random() - 0.5) * window.innerWidth * 0.3;
-      const destY = bias
-        ? window.innerHeight * bias.y - h / 2 + (Math.random() - 0.5) * 40
-        : cy + (Math.random() - 0.5) * window.innerHeight * 0.2;
+      const destX = window.innerWidth * dest.x - w / 2 + (Math.random() - 0.5) * 60;
+      const destY = window.innerHeight * dest.y - h / 2 + (Math.random() - 0.5) * 40;
       c.vx = (destX - c.x) * 0.09;
       c.vy = (destY - c.y) * 0.09;
       c.rot = (Math.random() - 0.5) * 24;
     } else {
       c.rot = c.baseRot;
-      if (bias) {
-        c.x = window.innerWidth * bias.x - w / 2;
-        c.y = window.innerHeight * bias.y - h / 2;
-      }
+      c.x = window.innerWidth * dest.x - w / 2;
+      c.y = window.innerHeight * dest.y - h / 2;
     }
     el.style.zIndex = ++zTop;
     el.style.transform = `translate(${c.x}px, ${c.y}px) rotate(${c.rot}deg)`;
@@ -371,9 +366,9 @@
   // photos wander in on their own the first time About scrolls into view.
   // no persistence, on purpose: close them all and they return on refresh.
   const AUTO_SPAWN = [
-    { key: "hike", bias: { x: 0.68, y: 0.62 } },
-    { key: "camp", bias: { x: 0.84, y: 0.4 } },
-    { key: "paddle", bias: { x: 0.74, y: 0.82 } },
+    { key: "hike", bias: { x: 0.7, y: 0.3 } },
+    { key: "camp", bias: { x: 0.85, y: 0.2 } },
+    { key: "paddle", bias: { x: 0.78, y: 0.38 } },
   ];
   const aboutSection = document.querySelector("#about");
   if (aboutSection && "IntersectionObserver" in window) {
