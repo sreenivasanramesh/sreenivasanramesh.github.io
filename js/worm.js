@@ -50,7 +50,7 @@
 
   const reset = () => {
     state = "ready"; // ready | run | over
-    speed = 7.5;
+    speed = 10;
     score = 0;
     frames = 0;
     shake = 0;
@@ -171,7 +171,7 @@
     if (state === "run") bgScroll += speed; // the world stops when you die
 
     if (state === "run") {
-      speed = Math.min(13, speed + 0.002);
+      speed = Math.min(15, speed + 0.002);
       score += speed * 0.032;
 
       // physics with variable jump height
