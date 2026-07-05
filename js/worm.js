@@ -168,7 +168,7 @@
   /* ---------- update ---------- */
   const update = () => {
     frames++;
-    bgScroll += speed;
+    if (state === "run") bgScroll += speed; // the world stops when you die
 
     if (state === "run") {
       speed = Math.min(11, speed + 0.0013);
@@ -468,5 +468,6 @@
     jump,
     forceRock: () => obstacles.push({ x: 140, w: 20, h: 20, type: "rock" }),
     forcePerson: () => people.push({ x: 120, w: 10, h: 16, step: 0 }),
+    setSpeed: (v) => { speed = v; },
   };
 })();
