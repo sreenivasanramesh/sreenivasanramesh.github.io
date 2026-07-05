@@ -974,7 +974,7 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
   -webkit-backdrop-filter: blur(7px);
 }
 .worm-modal__frame {
-  width: min(760px, 100%);
+  width: min(1040px, 100%);
   background: var(--bg);
   border: 1px solid var(--line);
   padding: 1rem;
@@ -1001,6 +1001,15 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
   text-transform: uppercase;
   color: var(--ink-dim);
 }
+.worm-modal__mute {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  transition: color 0.3s;
+  white-space: nowrap;
+}
+.worm-modal__mute:hover { color: var(--accent); }
 .worm-modal__close {
   font-size: 1.2rem;
   line-height: 1;

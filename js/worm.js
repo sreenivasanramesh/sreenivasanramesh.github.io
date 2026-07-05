@@ -62,9 +62,27 @@
   };
   reset();
 
+  /* ---------- music + mute ---------- */
+  const muteBtn = modal.querySelector(".worm-modal__mute");
+  let muted = localStorage.getItem("vr-worm-mute") === "1";
+  const music = new Audio("assets/arrakis.mp3");
+  music.loop = true;
+  music.volume = 0.32;
+  music.preload = "none";
+  const paintMute = () => { muteBtn.textContent = muted ? "SOUND [OFF]" : "SOUND [ON]"; };
+  paintMute();
+  muteBtn.addEventListener("click", () => {
+    muted = !muted;
+    localStorage.setItem("vr-worm-mute", muted ? "1" : "0");
+    music.muted = muted;
+    paintMute();
+  });
+  music.muted = muted;
+
   /* ---------- tiny synth ---------- */
   let actx;
   const blip = (type, f0, f1, dur, vol) => {
+    if (muted) return;
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
       if (actx.state === "suspended") actx.resume();
@@ -97,6 +115,9 @@
   };
   const dunesFar = mkDunes(0, 18, 44);
   const dunesNear = mkDunes(0, 8, 26);
+  const mesas = Array.from({ length: 5 }, (_, i) => ({
+    x: i * 320 + rnd(0, 120), w: rnd(60, 130), h: rnd(34, 60), top: rnd(0.5, 0.8),
+  }));
   let bgScroll = 0;
 
   /* ---------- spawning ---------- */
@@ -118,9 +139,12 @@
   };
 
   /* ---------- input ---------- */
+  const startMusic = () => {
+    music.play().catch(() => {});
+  };
   const jump = () => {
-    if (state === "ready") { state = "run"; return; }
-    if (state === "over") { reset(); state = "run"; return; }
+    if (state === "ready") { state = "run"; startMusic(); return; }
+    if (state === "over") { reset(); state = "run"; startMusic(); return; }
     if (worm.grounded) {
       worm.vy = -10.6;
       worm.grounded = false;
@@ -227,39 +251,65 @@
   };
 
   const drawWorm = () => {
-    // body segments, tail to head
-    for (let i = 5; i >= 1; i--) {
-      const segY = worm.hist[i * 7];
-      const sw = 20 - i * 1.6;
-      const sh = 22 - i * 2.4;
-      const sx = 88 - i * 15;
+    // body: six tapered segments, tail to head, arched via the history buffer
+    for (let i = 6; i >= 1; i--) {
+      const segY = worm.hist[i * 6];
+      const sw = 22 - i * 1.8;
+      const sh = 26 - i * 2.6;
+      const sx = 88 - i * 14;
+      // rounded silhouette: narrower cap rows above the core rect
+      px(sx - sw / 2 + 2, segY - sh - 2, sw - 4, 2, C.worm);
       px(sx - sw / 2, segY - sh, sw, sh, C.worm);
-      px(sx - sw / 2, segY - sh, sw, 3, C.wormHi);
-      px(sx - sw / 2, segY - 4, sw, 4, C.wormLo);
-      px(sx - sw / 2 + 2, segY - sh + 5, sw - 4, 1, C.wormLo); // ring line
+      px(sx - sw / 2 + 2, segY - sh, sw - 4, 3, C.wormHi);       // ridge light
+      px(sx - sw / 2, segY - 5, sw, 5, C.wormLo);                // belly shade
+      px(sx - sw / 2 + 1, segY - sh + Math.round(sh * 0.4), sw - 2, 2, C.wormLo); // ring
+      px(sx + sw / 2 - 3, segY - sh + 3, 1, sh - 6, "#7c4c1e");  // segment seam
+      // scale speckles, fixed per segment
+      px(sx - 4, segY - sh + 6, 2, 2, "#a86428");
+      px(sx + 1, segY - 9, 2, 2, "#a86428");
     }
-    // head
+    // head, rounded, facing right
     const hy = worm.y;
-    const mouthOpen = worm.gulp > 0 ? 8 : 4;
-    px(88, hy - 26, 22, 26, C.worm);
-    px(88, hy - 26, 22, 3, C.wormHi);
-    px(88, hy - 5, 22, 5, C.wormLo);
-    // maw, facing forward
-    px(104, hy - 20 - mouthOpen / 2, 10, 14 + mouthOpen, C.maw);
-    for (let t = 0; t < 3; t++) {
-      px(104 + t * 3, hy - 20 - mouthOpen / 2, 2, 3, C.teeth);
-      px(104 + t * 3, hy - 8 + mouthOpen / 2, 2, 3, C.teeth);
+    const mouthOpen = worm.gulp > 0 ? 10 : 4;
+    px(88, hy - 30, 24, 30, C.worm);
+    px(90, hy - 32, 20, 2, C.worm);                              // crown cap
+    px(90, hy - 32, 20, 2, C.wormHi);
+    px(88, hy - 30, 24, 3, C.wormHi);
+    px(88, hy - 6, 24, 6, C.wormLo);
+    px(92, hy - 26, 2, 2, "#a86428");                            // speckles
+    px(97, hy - 14, 2, 2, "#a86428");
+    // maw: dark throat with two rings of teeth
+    const mawY = hy - 24 - mouthOpen / 2;
+    const mawH = 18 + mouthOpen;
+    px(102, mawY, 12, mawH, C.maw);
+    px(108, mawY + 3, 6, mawH - 6, "#070503");                   // deeper throat
+    for (let t = 0; t < 4; t++) {
+      px(102 + t * 3, mawY, 2, 4 - (t % 2), C.teeth);            // upper teeth
+      px(102 + t * 3, mawY + mawH - (4 - (t % 2)), 2, 4 - (t % 2), C.teeth); // lower
     }
-    // rider on the second segment
-    const ry = worm.hist[7] - 22;
-    px(70, ry - 10, 6, 6, C.rider);            // hood
-    px(72, ry - 8, 3, 3, C.riderFace);         // face
-    px(69, ry - 4, 8, 7, C.rider);             // body
-    const flap = Math.sin(frames * 0.4) > 0 ? 1 : 0;
-    px(64 - flap * 2, ry - 6 + flap, 5, 3, "#5a4325"); // cape
+    px(101, mawY - 2, 13, 2, C.wormLo);                          // lip
+    px(101, mawY + mawH, 13, 2, C.wormLo);
+    // rider on the second segment, hook-line to the head crown
+    const ry = worm.hist[6] - 26;
+    ctx.strokeStyle = "#8f8c83";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(76, ry - 2);
+    ctx.quadraticCurveTo(88, ry - 10, 98, hy - 30);
+    ctx.stroke();
+    const flap = Math.sin(frames * 0.45) > 0 ? 1 : 0;
+    px(62 - flap * 3, ry - 5 + flap * 2, 8, 3, "#5a4325");        // cape, flowing
+    px(64 - flap * 2, ry - 8 + flap, 7, 3, "#5a4325");
+    px(69, ry - 12, 7, 7, C.rider);                               // hood
+    px(71, ry - 10, 3, 3, C.riderFace);                           // face
+    px(75, ry - 10, 1, 2, "#78b7ff");                             // spice-blue eye
+    px(68, ry - 5, 9, 8, C.rider);                                // body
+    px(76, ry - 4, 3, 2, "#5a4325");                              // arm to the line
+    px(70, ry + 3, 3, 3, "#2b2117");                              // knee
     // sand spray while grounded
     if (worm.grounded && state === "run" && frames % 3 === 0) {
-      particles.push({ x: rnd(64, 80), y: GROUND + 1, vx: rnd(-3, -1), vy: rnd(-1.5, -0.2), life: 10, c: C.wormLo });
+      particles.push({ x: rnd(60, 80), y: GROUND + 1, vx: rnd(-3, -1), vy: rnd(-1.8, -0.3), life: 12, c: C.wormLo });
+      particles.push({ x: rnd(100, 116), y: GROUND + 1, vx: rnd(1, 2.5), vy: rnd(-1.5, -0.3), life: 10, c: "#6b4a20" });
     }
   };
 
@@ -281,6 +331,19 @@
     ctx.fillStyle = "#8a857a";
     ctx.beginPath(); ctx.arc(632, 30, 5, 0, 7); ctx.fill();
 
+    // flat-topped mesas on the horizon
+    ctx.fillStyle = "#13100a";
+    mesas.forEach((m) => {
+      const mx = ((m.x - bgScroll * 0.12) % (W + 400) + W + 400) % (W + 400) - 200;
+      if (mx > W + 20) return;
+      ctx.beginPath();
+      ctx.moveTo(mx, GROUND + 2);
+      ctx.lineTo(mx + m.w * (1 - m.top) * 0.5, GROUND - m.h);
+      ctx.lineTo(mx + m.w * (1 + m.top) * 0.5, GROUND - m.h);
+      ctx.lineTo(mx + m.w, GROUND + 2);
+      ctx.fill();
+    });
+
     drawDunes(dunesFar, 0.25, C.duneFar, GROUND + 2);
     drawDunes(dunesNear, 0.55, C.duneNear, GROUND + 2);
 
@@ -295,26 +358,41 @@
     // obstacles
     obstacles.forEach((o) => {
       if (o.type === "rock") {
+        px(o.x + 2, GROUND - o.h - 2, o.w - 4, 2, C.rock);        // rounded top
         px(o.x, GROUND - o.h, o.w, o.h, C.rock);
-        px(o.x + 2, GROUND - o.h, o.w - 6, 3, C.rockHi);
-        px(o.x + o.w - 5, GROUND - o.h + 4, 3, o.h - 6, "#3a362f");
+        px(o.x + 2, GROUND - o.h - 2, o.w - 8, 2, C.rockHi);
+        px(o.x + 1, GROUND - o.h, Math.max(3, o.w * 0.4), 3, C.rockHi);
+        px(o.x + o.w - 5, GROUND - o.h + 3, 4, o.h - 3, "#332f28"); // shadow side
+        px(o.x + Math.round(o.w * 0.45), GROUND - o.h + 4, 1, o.h - 8, "#2c2822"); // crack
+        px(o.x - 3, GROUND - 2, o.w + 6, 2, "#241c12");            // sand skirt
       } else {
-        ctx.fillStyle = C.duneNear;
+        ctx.fillStyle = "#2a1d0e";
         ctx.beginPath();
         ctx.moveTo(o.x, GROUND + 1);
         ctx.lineTo(o.x + o.w * 0.5, GROUND - o.h);
         ctx.lineTo(o.x + o.w, GROUND + 1);
         ctx.fill();
-        px(o.x + o.w * 0.42, GROUND - o.h, o.w * 0.16, 3, C.groundTop);
+        ctx.fillStyle = "#3a2a14";                                 // lit windward face
+        ctx.beginPath();
+        ctx.moveTo(o.x, GROUND + 1);
+        ctx.lineTo(o.x + o.w * 0.5, GROUND - o.h);
+        ctx.lineTo(o.x + o.w * 0.6, GROUND + 1);
+        ctx.fill();
+        px(o.x + o.w * 0.44, GROUND - o.h, o.w * 0.14, 2, C.groundTop); // crest
+        px(o.x + o.w * 0.3, GROUND - o.h * 0.55, o.w * 0.12, 1.5, "#4a3417"); // ridge lines
+        px(o.x + o.w * 0.2, GROUND - o.h * 0.28, o.w * 0.16, 1.5, "#4a3417");
       }
     });
 
     // crew members
     people.forEach((p) => {
       const leg = Math.sin(p.step * 4) > 0 ? 1 : -1;
-      px(p.x + 2, GROUND - p.h, 6, 5, p.eaten ? C.dim : C.person);       // head/helmet
-      px(p.x + 3, GROUND - p.h + 1, 3, 2, "#14100a");                    // visor
-      px(p.x + 1, GROUND - p.h + 5, 8, 7, C.person);                     // body
+      px(p.x + 2, GROUND - p.h, 6, 5, C.person);                         // helmet
+      px(p.x + 3, GROUND - p.h + 1, 4, 2, "#14100a");                    // visor
+      px(p.x + 4, GROUND - p.h + 1, 2, 1, "#78b7ff");                    // visor glint
+      px(p.x + 1, GROUND - p.h + 5, 8, 7, C.person);                     // suit
+      px(p.x - 1, GROUND - p.h + 6, 2, 5, "#b7b2a4");                    // pack
+      px(p.x + 3, GROUND - p.h + 7, 4, 1, "#8f8c83");                    // belt
       px(p.x + 2 + leg, GROUND - 4, 2, 4, C.person);                     // legs
       px(p.x + 6 - leg, GROUND - 4, 2, 4, C.person);
     });
@@ -365,6 +443,8 @@
   const close = () => {
     open = false;
     modal.hidden = true;
+    music.pause();
+    music.currentTime = 0;
     document.documentElement.style.overflow = "";
     cancelAnimationFrame(raf);
     opener.focus();
