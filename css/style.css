@@ -961,6 +961,7 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
 
 /* ---------- arrakis runner modal ---------- */
 
+.worm-modal[hidden] { display: none; }
 .worm-modal {
   position: fixed;
   inset: 0;
