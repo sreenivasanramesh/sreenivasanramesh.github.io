@@ -25,17 +25,25 @@
   }
 
   /* ---------- letter-hop spans for the contact CTA ---------- */
+  /* letters grouped per word so lines can only break at spaces */
   document.querySelectorAll("[data-letters-hover]").forEach((el) => {
     const text = el.textContent;
     el.textContent = "";
     el.setAttribute("aria-label", text.trim());
-    [...text].forEach((ch, i) => {
-      const s = document.createElement("span");
-      s.className = "hop";
-      s.style.setProperty("--i", i);
-      s.textContent = ch === " " ? " " : ch;
-      s.setAttribute("aria-hidden", "true");
-      el.appendChild(s);
+    let i = 0;
+    text.split(" ").forEach((word, w, words) => {
+      const wordEl = document.createElement("span");
+      wordEl.className = "hop-word";
+      wordEl.setAttribute("aria-hidden", "true");
+      [...word].forEach((ch) => {
+        const s = document.createElement("span");
+        s.className = "hop";
+        s.style.setProperty("--i", i++);
+        s.textContent = ch;
+        wordEl.appendChild(s);
+      });
+      el.appendChild(wordEl);
+      if (w < words.length - 1) el.appendChild(document.createTextNode(" "));
     });
   });
 
@@ -78,19 +86,31 @@
   });
 
   /* ---------- marquee: fill track, then double for seamless -50% loop ---------- */
-  document.querySelectorAll(".marquee").forEach((marquee) => {
-    const track = marquee.querySelector(".marquee__track");
-    const unit = track.innerHTML;
-    let width = track.scrollWidth;
-    const target = marquee.clientWidth * 1.25;
-    let guard = 0;
-    while (width < target && guard < 10) {
-      track.innerHTML += unit;
-      width = track.scrollWidth;
-      guard++;
-    }
-    track.innerHTML += track.innerHTML; // exact duplicate → translateX(-50%) loops clean
-  });
+  const setupMarquees = () => {
+    document.querySelectorAll(".marquee").forEach((marquee) => {
+      const track = marquee.querySelector(".marquee__track");
+      if (!track.dataset.unit) track.dataset.unit = track.innerHTML;
+      track.innerHTML = track.dataset.unit;
+      let width = track.scrollWidth;
+      const target = marquee.clientWidth * 1.25;
+      let guard = 0;
+      while (width < target && guard < 10) {
+        track.innerHTML += track.dataset.unit;
+        width = track.scrollWidth;
+        guard++;
+      }
+      track.innerHTML += track.innerHTML; // exact duplicate → translateX(-50%) loops clean
+      // constant speed regardless of track length or viewport, so both rows
+      // (and mobile) glide at the same rate
+      const PX_PER_SEC = marquee.classList.contains("marquee--alt") ? 52 : 62;
+      track.style.animationDuration = track.scrollWidth / 2 / PX_PER_SEC + "s";
+    });
+  };
+  setupMarquees();
+  // widths change when the web fonts swap in; measure again once they're ready
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(setupMarquees);
+  }
 
   /* ---------- clocks (Seattle) ---------- */
   const clockEls = document.querySelectorAll("[data-clock]");
@@ -589,7 +609,17 @@
     console.log("%c", "", bait);
   }
 
-  // 4) a note for people who open the console
+  // 4) he's on the footer line. click him.
+  const waldo = document.querySelector(".waldo");
+  if (waldo) {
+    waldo.addEventListener("click", () => {
+      waldo.classList.add("found");
+      console.log("%c( you found him )", "color:#e03131; font-family:monospace;");
+      setTimeout(() => waldo.classList.remove("found"), 2600);
+    });
+  }
+
+  // 5) a note for people who open the console
   console.log(
     "%cV–R" +
       "%c\n\nHey, you found the console." +
