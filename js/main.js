@@ -234,8 +234,21 @@
       // tilt with horizontal velocity, settle back to base rotation
       const target = c.baseRot + Math.max(-14, Math.min(14, c.vx * 0.7));
       c.rot += (target - c.rot) * 0.12;
-      c.el.style.transform = `translate(${c.x}px, ${c.y}px) rotate(${c.rot}deg)`;
-      if (c.dragging || Math.abs(c.vx) + Math.abs(c.vy) > 0.05 || Math.abs(target - c.rot) > 0.05) {
+      // jelly: squash-and-stretch aligned with the motion direction
+      const speed = Math.hypot(c.vx, c.vy);
+      const jellyTarget = Math.min(0.2, speed * 0.0075);
+      c.jelly = (c.jelly || 0) + (jellyTarget - (c.jelly || 0)) * 0.22;
+      if (speed > 1.2) c.jellyAng = Math.atan2(c.vy, c.vx);
+      let deform = "";
+      if (c.jelly > 0.004 && c.jellyAng !== undefined) {
+        deform =
+          ` rotate(${c.jellyAng}rad)` +
+          ` scale(${1 + c.jelly}, ${1 - c.jelly * 0.65})` +
+          ` rotate(${-c.jellyAng}rad)`;
+      }
+      c.el.style.transform = `translate(${c.x}px, ${c.y}px)${deform} rotate(${c.rot}deg)`;
+      if (c.dragging || Math.abs(c.vx) + Math.abs(c.vy) > 0.05 ||
+          Math.abs(target - c.rot) > 0.05 || c.jelly > 0.004) {
         allSettled = false;
       }
     });
@@ -522,6 +535,8 @@
       typed = "";
       accentIdx = 1 - accentIdx;
       document.documentElement.style.setProperty("--accent", ACCENTS[accentIdx]);
+      document.dispatchEvent(new CustomEvent("vr:accent"));
+      document.dispatchEvent(new CustomEvent("vr:shock"));
       if (!reduceMotion) {
         for (const el of [wash, toast]) {
           el.classList.remove("go");
