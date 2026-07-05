@@ -50,7 +50,7 @@
 
   const reset = () => {
     state = "ready"; // ready | run | over
-    speed = 7.5;
+    speed = 7;
     score = 0;
     frames = 0;
     shake = 0;
