@@ -34,6 +34,8 @@
     uniform vec3  u_accent;
     uniform float u_shockT;   // seconds since shock start, negative = idle
     uniform vec2  u_shockC;   // uv, y-up
+    uniform float u_scrollV;  // smoothed scroll velocity, roughly -1..1
+    uniform float u_scrollP;  // absolute scroll position in px
 
     float hash(vec2 p) {
       return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -64,6 +66,10 @@
       float aspect = u_res.x / u_res.y;
       vec2 p = uv * vec2(aspect, 1.0) * 1.7;
       float t = u_time * 0.028;
+      // the field scrolls gently with the page and smears under fast scrolling
+      p.y += u_scrollP * 0.00045;
+      float smear = clamp(abs(u_scrollV), 0.0, 1.0);
+      p.y = mix(p.y, p.y * 0.35 + u_scrollP * 0.00045 * 0.65, smear * 0.55);
 
       // expanding shock ring: displaces the field and glows in the accent
       float shock = 0.0;
@@ -89,9 +95,14 @@
       float n = fbm(p + 1.9 * q + vec2(t * 0.6, -t * 0.4));
 
       vec3 base = vec3(0.055, 0.055, 0.047);   // #0e0e0c
-      vec3 soft = vec3(0.105, 0.104, 0.090);
-      vec3 col = mix(base, soft, smoothstep(0.35, 0.95, n));
-      col += u_accent * 0.035 * pow(max(q.y, 0.0), 3.0);
+      vec3 soft = vec3(0.128, 0.126, 0.108);
+      vec3 col = mix(base, soft, smoothstep(0.28, 0.85, n));
+      col += u_accent * 0.06 * pow(max(q.y, 0.0), 2.5);
+      // fast scrolling briefly charges the field with the accent
+      col += u_accent * smear * 0.10 * smoothstep(0.4, 0.9, n);
+      // the cursor is a soft light source
+      col += vec3(0.95, 0.92, 0.85) * minfluence * 0.045;
+      col += u_accent * minfluence * 0.02;
       col += u_accent * shock * 0.42;
 
       // soft vignette
@@ -136,7 +147,7 @@
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
   const U = {};
-  ["u_res", "u_time", "u_mouse", "u_accent", "u_shockT", "u_shockC"].forEach(
+  ["u_res", "u_time", "u_mouse", "u_accent", "u_shockT", "u_shockC", "u_scrollV", "u_scrollP"].forEach(
     (n) => (U[n] = gl.getUniformLocation(program, n))
   );
 
@@ -182,10 +193,19 @@
 
   gl.uniform2f(U.u_shockC, 0.5, 0.45);
 
+  /* scroll state, smoothed */
+  let scrollV = 0;
+  let lastScrollY = window.scrollY;
+
   let raf;
   const frame = (now) => {
     mouse.x += (mouse.tx - mouse.x) * 0.04;
     mouse.y += (mouse.ty - mouse.y) * 0.04;
+    const dy = window.scrollY - lastScrollY;
+    lastScrollY = window.scrollY;
+    scrollV += (Math.max(-1, Math.min(1, dy * 0.02)) - scrollV) * 0.08;
+    gl.uniform1f(U.u_scrollV, scrollV);
+    gl.uniform1f(U.u_scrollP, window.scrollY);
     gl.uniform2f(U.u_res, canvas.width, canvas.height);
     gl.uniform1f(U.u_time, now / 1000);
     gl.uniform2f(U.u_mouse, mouse.x, mouse.y);

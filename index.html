@@ -270,6 +270,27 @@
   <div class="toss-peek" aria-hidden="true"></div>
 
   <footer class="footer">
+    <button class="shai" aria-label="The sleeper has awakened" title="ride">
+      <svg width="38" height="24" viewBox="0 0 38 24" shape-rendering="crispEdges" aria-hidden="true">
+        <!-- tail segments rising left to right -->
+        <rect x="1" y="18" width="6" height="5" fill="#8f5722"/>
+        <rect x="7" y="14" width="7" height="9" fill="#a86428"/>
+        <rect x="14" y="10" width="8" height="13" fill="#c07a3a"/>
+        <rect x="15" y="10" width="6" height="2" fill="#d99a55"/>
+        <!-- head, mouth open to the right -->
+        <rect x="22" y="6" width="12" height="17" fill="#c07a3a"/>
+        <rect x="23" y="6" width="9" height="2" fill="#d99a55"/>
+        <rect x="30" y="10" width="7" height="9" fill="#14100a"/>
+        <rect x="30" y="10" width="6" height="2" fill="#f4f1e9"/>
+        <rect x="30" y="17" width="6" height="2" fill="#f4f1e9"/>
+        <rect x="34" y="13" width="2" height="3" fill="#f4f1e9"/>
+        <!-- rider on the head -->
+        <rect x="24" y="2" width="4" height="4" fill="#3d2f1e"/>
+        <rect x="25" y="3" width="2" height="2" fill="#eecfa8"/>
+        <rect x="23" y="5" width="5" height="3" fill="#3d2f1e"/>
+        <rect x="21" y="3" width="2" height="4" fill="#5a4325"/>
+      </svg>
+    </button>
     <button class="waldo" aria-label="Wait, is that him?" title="found him">
       <svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true">
         <circle cx="7" cy="1.6" r="1.4" fill="#f4f1e9"/>
@@ -293,7 +314,24 @@
     <a class="underline-link magnetic" href="#top">Back to top ↑</a>
   </footer>
 
+  <div class="worm-modal" hidden role="dialog" aria-modal="true" aria-label="Arrakis Runner">
+    <div class="worm-modal__frame">
+      <div class="worm-modal__head">
+        <span class="worm-modal__title">Arrakis <em class="serif">Runner</em></span>
+        <span class="worm-modal__hint">space / tap: jump · eat the crew · avoid the rocks</span>
+        <button class="worm-modal__close" aria-label="Close game">×</button>
+      </div>
+      <canvas class="worm-canvas" width="720" height="220"></canvas>
+      <div class="worm-modal__foot">
+        <span data-worm-score>0000</span>
+        <span class="worm-modal__bless">bless the maker and his water</span>
+        <span data-worm-hi>HI 0000</span>
+      </div>
+    </div>
+  </div>
+
   <script src="js/shader.js" defer></script>
   <script src="js/main.js" defer></script>
+  <script src="js/worm.js" defer></script>
 </body>
 </html>
