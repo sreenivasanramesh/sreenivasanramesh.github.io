@@ -551,7 +551,7 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
 .contact__pitch em { color: var(--accent); font-size: 1.08em; }
 .contact__cta {
   display: inline-flex;
-  align-items: baseline;
+  align-items: flex-end;
   flex-wrap: wrap;
   gap: clamp(1rem, 3vw, 2rem);
   margin-top: clamp(2rem, 5vh, 3.5rem);
@@ -583,6 +583,7 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
 }
 .contact__cta:hover .contact__cta-arrow { transform: translateX(0.35em) rotate(-45deg); }
 .hop-word { display: inline-block; white-space: nowrap; }
+.contact__cta-text .hop-word { display: block; line-height: 0.95; }
 /* letter hop on cta hover */
 .contact__cta .hop {
   display: inline-block;
@@ -951,7 +952,7 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
 .shai {
   position: absolute;
   top: -24px;
-  left: 66%;
+  left: 20%;
   line-height: 0;
   opacity: 0.9;
   transition: transform 0.4s var(--ease-snap);
@@ -1041,7 +1042,7 @@ a:hover .roll__inner, button:hover .roll__inner { transform: translateY(-50%); }
 .waldo {
   position: absolute;
   top: -20px;
-  left: 71%;
+  left: 78%;
   line-height: 0;
   opacity: 0.85;
   transition: transform 0.4s var(--ease-snap);
