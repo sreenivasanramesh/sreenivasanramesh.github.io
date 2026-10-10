@@ -1,6 +1,6 @@
 # vasan.dev — personal site
 
-Static, no build step. `index.html` + `css/style.css` + `js/main.js`.
+Static, no build step. `index.html` + `css/style.css` + `js/main.js` + `js/worm.js`.
 
 ## Preview locally
 
@@ -9,17 +9,17 @@ python3 -m http.server 8321
 # → http://localhost:8321
 ```
 
-## Deploy
+Serve over HTTP rather than opening the file directly; the fonts and the hero shader need it.
 
-Any static host works as-is:
+## How it's put together
 
-- **GitHub Pages** — push to a repo, Settings → Pages → deploy from branch.
-- **Netlify / Cloudflare Pages** — drag-and-drop the folder or connect the repo. No build command, publish directory = root.
+- The concept is a contact sheet. Type is Redaction (display), Switzer (text) and Departure Mono (labels), self-hosted in `assets/fonts/`. Grease red is the one accent.
+- The hero print is a small WebGL shader in `js/main.js` (develop-in, grain, halation). Without WebGL it falls back to a plain image.
+- Stickers come in two print runs, `assets/stickers/riso-*` and `photo-*`. Each visit gets one at random, and the hero line is a 50/50 pick between two drafts. Force either with `?set=riso|photo` and `?line=1|2`.
+- Modes: Daylight, B&W (`.silver`) and Safelight (`.safe`) live as CSS variables in `:root`. The choice is saved in `localStorage`, and dark-mode systems default to Safelight.
+- Showcase media lives in `assets/work/`. Edit the `WORK` list in `js/main.js` to change frames, copy or modal media.
+- All motion respects `prefers-reduced-motion`.
 
-## Notes
+## Easter eggs
 
-- Fonts: Archivo (variable) + Instrument Serif via Google Fonts.
-- All animation respects `prefers-reduced-motion`.
-- Content edits: everything lives in `index.html`; colors/typography in the
-  `:root` block of `css/style.css`.
-- Design decisions: `docs/superpowers/specs/2026-07-04-personal-site-design.md`.
+Type `wololo`. Type `how do you turn this on`. Drum four steady beats on the empty hero. Find Waldo in a print. Ride the worm in the footer.

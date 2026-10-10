@@ -3,335 +3,173 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vasan Ramesh · Software Engineer</title>
-  <meta name="description" content="Vasan Ramesh is a software engineer in Seattle building AI systems, evaluation frameworks, and large-scale infrastructure.">
-  <meta property="og:title" content="Vasan Ramesh · Software Engineer">
-  <meta property="og:description" content="Building AI systems & the infrastructure behind them.">
-  <meta name="theme-color" content="#0e0e0c">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <title>Vasan Ramesh</title>
+  <meta name="description" content="Vasan builds software at Meta and develops film on the weekends. A personal site, laid out like a contact sheet.">
+  <meta property="og:title" content="Vasan Ramesh">
+  <meta property="og:description" content="Software developer. Film developer.">
+  <meta name="theme-color" content="#f1efea">
+  <script>
+    // apply the saved mode before first paint so the page never flashes the wrong light
+    (function () {
+      var m = null;
+      try { m = localStorage.getItem("vr-mode"); } catch (e) {}
+      if (m === null && matchMedia("(prefers-color-scheme: dark)").matches) m = "safe";
+      if (m) document.documentElement.className = m;
+    })();
+  </script>
+  <link rel="preload" href="assets/fonts/redaction-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/redaction-100.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230e0e0c'/%3E%3Ctext x='50' y='66' font-family='Arial Black, Arial, sans-serif' font-weight='900' font-size='56' fill='%23eae7df' text-anchor='middle'%3EV%3C/text%3E%3Crect x='28' y='76' width='44' height='9' fill='%23ff4d24'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f1efea'/%3E%3Ctext x='50' y='74' font-family='Georgia,serif' font-size='76' fill='%23151311' text-anchor='middle'%3EV%3C/text%3E%3Cellipse cx='50' cy='50' rx='44' ry='40' fill='none' stroke='%23d2321e' stroke-width='6' transform='rotate(-8 50 50)'/%3E%3C/svg%3E">
 </head>
 <body>
 
-  <div class="cursor" aria-hidden="true"></div>
-  <div class="cursor-ring" aria-hidden="true"></div>
-  <div class="grain" aria-hidden="true"></div>
-  <div class="progress" aria-hidden="true"></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <!-- stand-in emulsion for the strip: highlights bleed red, then grain -->
+    <filter id="film" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="matrix" values=".3 .59 .11 0 0 .3 .59 .11 0 0 .3 .59 .11 0 0 0 0 0 1 0" result="lum"/>
+      <feComponentTransfer in="lum" result="hi"><feFuncR type="linear" slope="4" intercept="-2.6"/><feFuncG type="linear" slope="4" intercept="-2.6"/><feFuncB type="linear" slope="4" intercept="-2.6"/></feComponentTransfer>
+      <feGaussianBlur in="hi" stdDeviation="5" result="glow"/>
+      <feColorMatrix in="glow" type="matrix" values="1 0 0 0 0 .28 0 0 0 0 .1 0 0 0 0 0 0 0 1 0" result="halo"/>
+      <feBlend in="SourceGraphic" in2="halo" mode="screen" result="lit"/>
+      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="4" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 1 0 0 0 -.5" result="grain"/>
+      <feBlend in="lit" in2="grain" mode="soft-light"/>
+    </filter>
+    <!-- safelight: everything collapses to red luminance -->
+    <filter id="safe" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".3 .59 .11 0 0  .06 .12 .02 0 0  .03 .06 .01 0 0  0 0 0 1 0"/></filter>
+    <!-- exposure-trail tint -->
+    <filter id="redtint" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .86  .1 .2 .04 0 .05  .06 .12 .02 0 .03  0 0 0 1 0"/></filter>
+    <!-- grease pencil: waxy, uneven edge -->
+    <filter id="wax"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2"/><feDisplacementMap in="SourceGraphic" scale="3.5"/></filter>
+  </svg>
 
-  <header class="nav">
-    <a class="nav__logo magnetic" href="#top" aria-label="Back to top">
-      <span class="nav__logo-mark">V–R</span>
-    </a>
-    <nav class="nav__links" aria-label="Primary">
-      <a class="nav__link magnetic" href="#about"><span class="roll"><span class="roll__inner"><span>About</span><span aria-hidden="true">About</span></span></span></a>
-      <a class="nav__link magnetic" href="#work"><span class="roll"><span class="roll__inner"><span>Experience</span><span aria-hidden="true">Experience</span></span></span></a>
-      <a class="nav__link magnetic" href="#projects"><span class="roll"><span class="roll__inner"><span>Work</span><span aria-hidden="true">Work</span></span></span></a>
-      <a class="nav__link magnetic" href="#contact"><span class="roll"><span class="roll__inner"><span>Contact</span><span aria-hidden="true">Contact</span></span></span></a>
-    </nav>
-    <div class="nav__meta">
-      <span class="nav__dot" aria-hidden="true"></span>
-      <span>Seattle&nbsp;·&nbsp;<span data-clock>--:--</span></span>
+  <div class="wrap">
+    <header class="top mono">
+      <nav class="nav" aria-label="Sections">
+        <a href="#showcase">Showcase</a>
+        <a href="#off-the-clock">Off the clock</a>
+        <a href="#say-hi">Say hi</a>
+      </nav>
+      <div class="modes" role="group" aria-label="Lighting">
+        <button data-mode="" aria-pressed="true">Daylight</button>
+        <button data-mode="silver" aria-pressed="false">B&amp;W</button>
+        <button data-mode="safe" aria-pressed="false">Safelight</button>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- ============ HERO: the light table ============ -->
+      <section class="hero" id="hero" aria-label="Intro">
+        <h1 class="name" id="name"><span class="greet" id="hi">Hi, I'm <img class="wave" id="wave" src="assets/stickers/riso-wave.webp" alt="" width="60" height="60" draggable="false"></span><span id="name-text">Vasan</span></h1>
+        <p class="line" id="line">Software developer. Film developer. Happiest somewhere with no signal.</p>
+        <figure class="print" id="print">
+          <canvas id="print-canvas" role="img" aria-label="A dog on a trail below Mt. Baker, a snowy volcano, with an alpine lake in the valley"></canvas>
+          <figcaption class="mono"><span>Mt. Baker · 8×12</span><span id="timer">Dev 0:00</span></figcaption>
+        </figure>
+        <div class="layer" id="hero-layer" aria-hidden="true"></div>
+      </section>
+
+      <!-- ============ SHOWCASE ============ -->
+      <section class="section" id="showcase">
+        <span class="idx mono">01 · Showcase</span>
+        <h2>Things I've built</h2>
+        <p class="body">Most of it is at Meta, from evaluating frontier models to measuring what ads and agents actually do. One frame is a game I made for this site.</p>
+        <p class="aside">Click a frame to make a print.</p>
+      </section>
+
+    <div class="strip" id="strip">
+      <div class="frames" id="frames"></div>
     </div>
-  </header>
 
-  <main id="top">
-
-    <!-- ============ HERO ============ -->
-    <section class="hero" aria-label="Intro">
-      <p class="hero__kicker" data-split>Vasan Ramesh</p>
-      <h1 class="hero__title">
-        <span class="hero__line"><span class="hero__word" data-letters>SOFTWARE</span></span>
-        <span class="hero__line hero__line--indent">
-          <span class="hero__amp serif" data-letters>engineer</span>
-          <span class="hero__word hero__word--outline" data-letters>&amp;</span>
-        </span>
-        <span class="hero__line"><span class="hero__word" data-letters>AI&nbsp;SYSTEMS</span></span>
-      </h1>
-      <div class="hero__foot">
-        <p class="hero__blurb" data-reveal>
-          Building evaluation frameworks for frontier AI models at
-          <em class="serif">Meta</em>, and the large-scale infrastructure
-          underneath them.
+    <section class="section clock" id="off-the-clock">
+      <span class="idx mono">02 · Off the clock</span>
+      <div class="clock__text">
+        <h2>Off the clock</h2>
+        <p class="clock__lede">
+          When I'm not at a keyboard I'm usually somewhere with no signal:
+          <button class="toss" data-print="hike">hiking PNW trails</button>,
+          <button class="toss" data-print="camp">camping by alpine lakes</button>,
+          <button class="toss" data-print="paddle">paddle boarding</button> on glassy water,
+          and shooting most of it on film.
         </p>
-        <div class="hero__scroll" data-reveal aria-hidden="true">
-          <span class="hero__scroll-label">Scroll</span>
-          <span class="hero__scroll-line"></span>
-        </div>
+        <p class="body">Evenings go to a lot of Dune and one more game of Age of Empires II. <em class="wolo-word">Wololo.</em></p>
       </div>
+      <div class="clock__table" id="clock-table"></div>
+      <div class="layer" id="clock-layer"></div>
     </section>
 
-    <!-- ============ ABOUT ============ -->
-    <section class="section about" id="about">
-      <div class="section__head" data-reveal>
-        <span class="section__index">01</span>
-        <h2 class="section__title">About</h2>
-      </div>
-      <div class="about__grid">
-        <p class="about__lede" data-reveal>
-          Eight-plus years across <em class="serif">AI systems</em>, large-scale
-          distributed infrastructure, and machine-learning pipelines. Currently
-          building evaluation frameworks and benchmark systems for supervised
-          fine-tuning of frontier models, including the coding harness behind
-          Meta’s <em class="serif">Muse&nbsp;Spark</em>.
-        </p>
-        <div class="about__aside" data-reveal>
-          <p class="about__note">
-            Before that: payments at Walmart-scale, performance engineering at
-            Ancestry, and data-pipeline infrastructure at Sprinklr.
-          </p>
-          <p class="about__offline">
-            <span class="about__offline-label">Off the clock</span>
-            <button class="toss" data-photo="hike">Hiking PNW trails</button>,
-            <button class="toss" data-photo="camp">camping by alpine lakes</button>,
-            <button class="toss" data-photo="paddle">paddle boarding</button> on
-            calm water, and one more game of
-            <button class="toss" data-photo="aoe">Age of Empires II</button>.
-            <em class="serif wolo-word">Wololo.</em>
-            <span class="about__offline-hint" aria-hidden="true">( click one )</span>
-          </p>
-        </div>
+    <section class="section hi" id="say-hi">
+      <span class="idx mono">03 · Say hi</span>
+      <h2 class="hi__title">Say hi.</h2>
+      <p class="body">Working on something hard and interesting? I'd like to hear about it.</p>
+      <div class="hi__links">
+        <button class="email" id="email" data-email="sreenivasan.ramesh@gmail.com">
+          <span class="email__addr">sreenivasan.ramesh@gmail.com</span>
+          <span class="email__state mono" aria-live="polite">Click to copy</span>
+          <svg class="email__loop" viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M40 12 C120 2 268 4 288 32 C302 60 220 76 140 76 C52 77 4 66 8 42 C11 20 60 9 170 10"/></svg>
+        </button>
+        <a class="link" href="https://www.linkedin.com/in/sreenivasanramesh/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
       </div>
     </section>
+    </main>
 
-    <!-- ============ EXPERIENCE ============ -->
-    <section class="section work" id="work">
-      <div class="section__head" data-reveal>
-        <span class="section__index">02</span>
-        <h2 class="section__title">Experience</h2>
-      </div>
-
-      <ol class="jobs">
-        <li class="job" data-reveal>
-          <button class="job__row" aria-expanded="false">
-            <span class="job__index">M</span>
-            <span class="job__org">Meta</span>
-            <span class="job__role">Software Engineer</span>
-            <span class="job__time">2022 – Now</span>
-            <span class="job__plus" aria-hidden="true"></span>
-          </button>
-          <div class="job__body">
-            <div class="job__body-inner">
-              <p>Evaluation frameworks and SFT benchmark systems for Meta’s frontier
-              models; building <strong>MetaCode</strong>, the coding harness for Muse Spark.
-              Architected a persistent, shareable memory system for internal AI
-              agents, with RAG retrieval recall above 90%.</p>
-              <p>Before that, measurement and data infrastructure across
-              <strong>Business AI</strong>, <strong>Marketing Messages</strong>,
-              <strong>Commerce Insights</strong>, and <strong>Ads</strong>.
-              Selected work below.</p>
-            </div>
-          </div>
-        </li>
-        <li class="job" data-reveal>
-          <button class="job__row" aria-expanded="false">
-            <span class="job__index">W</span>
-            <span class="job__org">Walmart</span>
-            <span class="job__role">Software Engineer</span>
-            <span class="job__time">2021 – 22</span>
-            <span class="job__plus" aria-hidden="true"></span>
-          </button>
-          <div class="job__body">
-            <div class="job__body-inner">
-              <p>Re-architected a payments settlement platform processing $900M a year
-              from monolith to microservices.</p>
-              <p>Took a $50M/day transaction system from 270 to 4,000+ TPS,
-              at 70% lower cost.</p>
-            </div>
-          </div>
-        </li>
-        <li class="job" data-reveal>
-          <button class="job__row" aria-expanded="false">
-            <span class="job__index">S</span>
-            <span class="job__org">Sprinklr</span>
-            <span class="job__role">Software Engineer</span>
-            <span class="job__time">2017 – 19</span>
-            <span class="job__plus" aria-hidden="true"></span>
-          </button>
-          <div class="job__body">
-            <div class="job__body-inner">
-              <p>Intelligent auto-scaling for Kafka consumers in large-scale ETL
-              pipelines; vector auto-regressive time-series framework for anomaly
-              detection. Employee of the Quarter, Q4 2018.</p>
-            </div>
-          </div>
-        </li>
-        <li class="job" data-reveal>
-          <button class="job__row" aria-expanded="false">
-            <span class="job__index">A</span>
-            <span class="job__org">Ancestry</span>
-            <span class="job__role">SWE Intern, Performance</span>
-            <span class="job__time">2020</span>
-            <span class="job__plus" aria-hidden="true"></span>
-          </button>
-          <div class="job__body">
-            <div class="job__body-inner">
-              <p>Serverless notification system on Lambda + SQS with a 99.99%
-              delivery rate across four channels.</p>
-            </div>
-          </div>
-        </li>
-      </ol>
-    </section>
-
-    <!-- ============ PROJECTS ============ -->
-    <section class="section projects" id="projects">
-      <div class="section__head" data-reveal>
-        <span class="section__index">03</span>
-        <h2 class="section__title">Selected Work</h2>
-      </div>
-      <div class="cards">
-        <a class="card card--wide" data-reveal data-icon="spark" href="https://ai.meta.com/blog/introducing-muse-spark-msl/" target="_blank" rel="noopener noreferrer">
-          <span class="card__top"><span class="card__num">①</span><span class="card__arrow" aria-hidden="true">↗</span></span>
-          <h3 class="card__title">Muse Spark</h3>
-          <p class="card__desc">Meta’s frontier AI model, ranked 4th globally on the
-          Artificial Analysis Intelligence Index. Building the SFT evaluation and
-          benchmark systems behind it, and MetaCode, its coding harness.</p>
-          <span class="card__tags">Frontier Models · Evals · MetaCode</span>
-          <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 2l3.2 10.8L30 16l-10.8 3.2L16 30l-3.2-10.8L2 16l10.8-3.2L16 2z"/></svg></span>
-        </a>
-        <a class="card" data-reveal data-icon="metaai" href="https://about.fb.com/news/2026/06/meta-business-agent/" target="_blank" rel="noopener noreferrer">
-          <span class="card__top"><span class="card__num">②</span><span class="card__arrow" aria-hidden="true">↗</span></span>
-          <h3 class="card__title">Business AI</h3>
-          <p class="card__desc">End-to-end measurement infrastructure for Meta’s
-          business AI agents, quantifying agent impact on real business outcomes
-          and unblocking the product’s general-availability launch.</p>
-          <span class="card__tags">AI Agents · Measurement</span>
-          <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M16 4.5a11.5 11.5 0 1 1-9.6 5.2"/><path d="M16 11a5 5 0 1 1-4.6 3"/></svg></span>
-        </a>
-        <a class="card" data-reveal data-icon="whatsapp" href="https://developers.facebook.com/documentation/business-messaging/whatsapp/marketing-messages/overview" target="_blank" rel="noopener noreferrer">
-          <span class="card__top"><span class="card__num">③</span><span class="card__arrow" aria-hidden="true">↗</span></span>
-          <h3 class="card__title">Marketing Messages</h3>
-          <p class="card__desc">Led metrics computation and data-processing flows for
-          business messaging. Modeled reporting under privacy constraints
-          unblocked $6B in incremental revenue.</p>
-          <span class="card__tags">Messaging · Data Engineering</span>
-          <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 3C9.1 3 3.5 8.6 3.5 15.5c0 2.2.6 4.3 1.6 6.1L3 29l7.6-1.9c1.7.9 3.5 1.4 5.4 1.4 6.9 0 12.5-5.6 12.5-12.5S22.9 3 16 3zm0 22.7c-1.8 0-3.5-.5-5-1.3l-.4-.2-4.4 1.1 1.2-4.2-.3-.4a10.2 10.2 0 1 1 8.9 5zm5.6-7.6c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.6l-1-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1.1 1.1-1.1 2.6s1.1 3 1.2 3.2c.2.2 2.2 3.4 5.3 4.7.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.5-.1-.1-.3-.2-.6-.4z"/></svg></span>
-        </a>
-        <a class="card" data-reveal data-icon="bag" href="https://developers.facebook.com/documentation/ads-commerce/commerce-platform" target="_blank" rel="noopener noreferrer">
-          <span class="card__top"><span class="card__num">④</span><span class="card__arrow" aria-hidden="true">↗</span></span>
-          <h3 class="card__title">Commerce Insights</h3>
-          <p class="card__desc">Consistent cross-channel commerce measurement over data
-          spread across multiple stores: HLL sketches, query optimization, and
-          re-modeled views that cut months off development time.</p>
-          <span class="card__tags">Commerce · Analytics</span>
-          <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h18l-1.6 17H8.6L7 11z"/><path d="M11.5 14V9a4.5 4.5 0 0 1 9 0v5"/></svg></span>
-        </a>
-        <a class="card" data-reveal data-icon="meta" href="https://developers.facebook.com/documentation/ads-commerce/conversions-api" target="_blank" rel="noopener noreferrer">
-          <span class="card__top"><span class="card__num">⑤</span><span class="card__arrow" aria-hidden="true">↗</span></span>
-          <h3 class="card__title">Ads Measurement</h3>
-          <p class="card__desc">Measurement pipelines at ads scale: graph data-model
-          redesign and Spark optimization, cutting compute by 95% and storage by 96%.</p>
-          <span class="card__tags">Ads · Infrastructure</span>
-          <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"/></svg></span>
-        </a>
-      </div>
-    </section>
-
-    <!-- ============ SKILLS MARQUEE ============ -->
-    <section class="section section--full skills" aria-label="Skills">
-      <div class="marquee" data-direction="left">
-        <div class="marquee__track">
-          <span>Python</span><i>◆</i><span>PyTorch</span><i>◆</i><span>SFT</span><i>◆</i><span>Reinforcement Learning</span><i>◆</i><span>RAG</span><i>◆</i><span>Hack</span><i>◆</i><span>Java</span><i>◆</i><span>Scala</span><i>◆</i>
-        </div>
-      </div>
-      <div class="marquee marquee--alt" data-direction="right">
-        <div class="marquee__track">
-          <span>Kafka</span><i>◇</i><span>Spark</span><i>◇</i><span>Kubernetes</span><i>◇</i><span>AWS</span><i>◇</i><span>Redis</span><i>◇</i><span>Cassandra</span><i>◇</i><span>GraphQL</span><i>◇</i><span>ElasticSearch</span><i>◇</i>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ CONTACT ============ -->
-    <section class="section contact" id="contact">
-      <div class="section__head" data-reveal>
-        <span class="section__index">04</span>
-        <h2 class="section__title">Contact</h2>
-      </div>
-      <p class="contact__pitch" data-reveal>
-        Working on something interesting in <em class="serif">AI</em>,
-        infrastructure, or both?
-      </p>
-      <a class="contact__cta magnetic" href="mailto:sreenivasan.ramesh@gmail.com" data-reveal>
-        <span class="contact__cta-text" data-letters-hover>Let’s talk</span>
-        <span class="contact__cta-arrow" aria-hidden="true">→</span>
-      </a>
-      <div class="contact__links" data-reveal>
-        <a class="underline-link" href="mailto:sreenivasan.ramesh@gmail.com">sreenivasan.ramesh@gmail.com</a>
-        <a class="underline-link" href="https://www.linkedin.com/in/sreenivasanramesh/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
-      </div>
-    </section>
-
-  </main>
-
-  <div class="photo-layer" aria-live="polite"></div>
-  <div class="toss-peek" aria-hidden="true"></div>
-
-  <footer class="footer">
-    <button class="shai" aria-label="The sleeper has awakened" title="ride">
-      <svg width="38" height="24" viewBox="0 0 38 24" shape-rendering="crispEdges" aria-hidden="true">
-        <!-- tail segments rising left to right -->
-        <rect x="1" y="18" width="6" height="5" fill="#8f5722"/>
-        <rect x="7" y="14" width="7" height="9" fill="#a86428"/>
-        <rect x="14" y="10" width="8" height="13" fill="#c07a3a"/>
-        <rect x="15" y="10" width="6" height="2" fill="#d99a55"/>
-        <!-- head, mouth open to the right -->
-        <rect x="22" y="6" width="12" height="17" fill="#c07a3a"/>
-        <rect x="23" y="6" width="9" height="2" fill="#d99a55"/>
-        <rect x="30" y="10" width="7" height="9" fill="#14100a"/>
-        <rect x="30" y="10" width="6" height="2" fill="#f4f1e9"/>
-        <rect x="30" y="17" width="6" height="2" fill="#f4f1e9"/>
-        <rect x="34" y="13" width="2" height="3" fill="#f4f1e9"/>
-        <!-- rider on the head -->
-        <rect x="24" y="2" width="4" height="4" fill="#3d2f1e"/>
-        <rect x="25" y="3" width="2" height="2" fill="#eecfa8"/>
-        <rect x="23" y="5" width="5" height="3" fill="#3d2f1e"/>
-        <rect x="21" y="3" width="2" height="4" fill="#5a4325"/>
-      </svg>
-    </button>
-    <button class="waldo" aria-label="Wait, is that him?" title="found him">
-      <svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true">
-        <circle cx="7" cy="1.6" r="1.4" fill="#f4f1e9"/>
-        <rect x="3.2" y="2.4" width="7.6" height="1.9" rx="0.6" fill="#e03131"/>
-        <rect x="3.2" y="4.3" width="7.6" height="1.3" fill="#f4f1e9"/>
-        <rect x="4.1" y="5.6" width="5.8" height="3.9" rx="1.9" fill="#eecfa8"/>
-        <circle cx="5.6" cy="7.3" r="1.05" fill="none" stroke="#14130f" stroke-width="0.55"/>
-        <circle cx="8.4" cy="7.3" r="1.05" fill="none" stroke="#14130f" stroke-width="0.55"/>
-        <line x1="6.65" y1="7.3" x2="7.35" y2="7.3" stroke="#14130f" stroke-width="0.55"/>
-        <rect x="3.2" y="9.7" width="7.6" height="1.4" fill="#e03131"/>
-        <rect x="3.2" y="11.1" width="7.6" height="1.4" fill="#f4f1e9"/>
-        <rect x="3.2" y="12.5" width="7.6" height="1.4" fill="#e03131"/>
-        <rect x="3.2" y="13.9" width="7.6" height="1.4" fill="#f4f1e9"/>
-        <rect x="3.8" y="15.3" width="6.4" height="3.4" fill="#2b4c9b"/>
-        <rect x="6.6" y="15.3" width="0.8" height="3.4" fill="#1d3a78"/>
-      </svg>
-      <span class="waldo__tag" aria-hidden="true">( you found him )</span>
-    </button>
-    <span>© Vasan Ramesh</span>
-    <span class="footer__time">Seattle, WA · <span data-clock>--:--</span></span>
-    <a class="underline-link magnetic" href="#top">Back to top ↑</a>
-  </footer>
-
-  <div class="worm-modal" hidden role="dialog" aria-modal="true" aria-label="Arrakis Runner">
-    <div class="worm-modal__frame">
-      <div class="worm-modal__head">
-        <span class="worm-modal__title">Arrakis <em class="serif">Runner</em></span>
-        <span class="worm-modal__hint">space / tap: jump · eat the crew · avoid the rocks</span>
-        <button class="worm-modal__mute" aria-label="Toggle sound">SOUND [ON]</button>
-        <button class="worm-modal__close" aria-label="Close game">×</button>
-      </div>
-      <canvas class="worm-canvas" width="720" height="220"></canvas>
-      <div class="worm-modal__foot">
-        <span data-worm-score>0000</span>
-        <span class="worm-modal__bless">bless the maker and his water</span>
-        <span data-worm-hi>HI 0000</span>
-      </div>
-    </div>
+    <footer class="footer mono">
+      <span>© 2026 Vasan Ramesh</span>
+      <button class="shai" id="shai" aria-label="Play Arrakis Runner" title="ride the worm">
+        <svg width="38" height="24" viewBox="0 0 38 24" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="1" y="18" width="6" height="5" fill="#8f2a17"/>
+          <rect x="7" y="14" width="7" height="9" fill="#b8341d"/>
+          <rect x="14" y="10" width="8" height="13" fill="#d2321e"/>
+          <rect x="22" y="6" width="12" height="17" fill="#d2321e"/>
+          <rect x="30" y="10" width="7" height="9" fill="#151311"/>
+          <rect x="30" y="10" width="6" height="2" fill="#f1efea"/>
+          <rect x="30" y="17" width="6" height="2" fill="#f1efea"/>
+          <rect x="24" y="2" width="4" height="4" fill="#151311"/>
+          <rect x="23" y="5" width="5" height="3" fill="#151311"/>
+        </svg>
+        <span>Arrakis Runner</span>
+      </button>
+      <span>End of roll · 36/36</span>
+    </footer>
   </div>
 
-  <script src="js/shader.js" defer></script>
+  <!-- ============ print dialog ============ -->
+  <dialog class="print-dialog" id="print-dialog" aria-labelledby="pd-title">
+    <div class="pd">
+      <button class="pd__close mono" id="pd-close">Close ×</button>
+      <div class="pd__head">
+        <img class="pd__still" id="pd-still" alt="">
+        <div class="pd__text">
+          <span class="mono pd__edge" id="pd-edge"></span>
+          <h3 id="pd-title"></h3>
+          <p id="pd-body"></p>
+          <p id="pd-link"></p>
+        </div>
+      </div>
+      <div class="pd__media" id="pd-media"></div>
+      <p class="pd__credit mono" id="pd-credit"></p>
+    </div>
+  </dialog>
+
+  <!-- ============ Arrakis Runner ============ -->
+  <dialog class="worm-dialog" id="worm-dialog" aria-label="Arrakis Runner">
+    <div class="wd">
+      <div class="wd__head mono">
+        <span class="wd__title">Arrakis Runner <span class="wd__frame">· frame 06A</span></span>
+        <span class="wd__hint">space or tap to jump · eat the crew · grab the thumper</span>
+        <button class="wd__mute" id="worm-mute">Sound [on]</button>
+        <button class="wd__close" id="worm-close">Close ×</button>
+      </div>
+      <canvas class="wd__canvas" id="worm-canvas" width="720" height="220"></canvas>
+      <div class="wd__foot mono">
+        <span id="worm-score">0000</span>
+        <span>bless the maker and his water</span>
+        <span id="worm-hi">HI 0000</span>
+      </div>
+    </div>
+  </dialog>
+
   <script src="js/main.js" defer></script>
   <script src="js/worm.js" defer></script>
 </body>

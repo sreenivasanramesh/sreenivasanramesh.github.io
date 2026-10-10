@@ -1,431 +1,770 @@
-/* Vasan Ramesh — interactions
-   Everything degrades: reduced-motion users get a static, fully readable page. */
+/* Vasan · contact sheet
+   Develop-in hero, sticker table, contact-sheet strip with print dialog,
+   tossable prints, copy-to-clipboard email, and the easter eggs.
+   Reduced-motion visitors get the same page, settled and still. */
 
 (() => {
   "use strict";
 
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const params = new URLSearchParams(location.search);
+  const root = document.documentElement;
 
-  /* ---------- split [data-letters] into animatable spans ---------- */
-  if (!reduceMotion) {
-    document.querySelectorAll("[data-letters]").forEach((el) => {
-      const text = el.textContent;
-      el.textContent = "";
-      el.setAttribute("aria-label", text.trim());
-      [...text].forEach((ch, i) => {
-        const s = document.createElement("span");
-        s.className = "ltr";
-        s.style.setProperty("--i", i);
-        s.textContent = ch === " " ? " " : ch;
-        s.setAttribute("aria-hidden", "true");
-        el.appendChild(s);
-      });
-    });
-  }
+  /* ---------- modes: daylight / silver / safelight ---------- */
+  let mode = root.classList.contains("silver") ? 1 : root.classList.contains("safe") ? 2 : 0;
+  const paintModes = () => $$(".modes button").forEach((b) =>
+    b.setAttribute("aria-pressed", String(["", "silver", "safe"][mode] === b.dataset.mode)));
+  paintModes();
+  $$(".modes button").forEach((b) => b.addEventListener("click", () => {
+    root.classList.remove("silver", "safe");
+    if (b.dataset.mode) root.classList.add(b.dataset.mode);
+    mode = ["", "silver", "safe"].indexOf(b.dataset.mode);
+    try { localStorage.setItem("vr-mode", b.dataset.mode); } catch (e) { /* private mode */ }
+    paintModes();
+  }));
 
-  /* ---------- letter-hop spans for the contact CTA ---------- */
-  /* letters grouped per word so lines can only break at spaces */
-  document.querySelectorAll("[data-letters-hover]").forEach((el) => {
-    const text = el.textContent;
-    el.textContent = "";
-    el.setAttribute("aria-label", text.trim());
-    let i = 0;
-    text.split(" ").forEach((word, w, words) => {
-      const wordEl = document.createElement("span");
-      wordEl.className = "hop-word";
-      wordEl.setAttribute("aria-hidden", "true");
-      [...word].forEach((ch) => {
-        const s = document.createElement("span");
-        s.className = "hop";
-        s.style.setProperty("--i", i++);
-        s.textContent = ch;
-        wordEl.appendChild(s);
-      });
-      el.appendChild(wordEl);
-      if (w < words.length - 1) el.appendChild(document.createTextNode(" "));
-    });
-  });
-
-  /* ---------- scroll reveals ---------- */
-  const revealEls = document.querySelectorAll("[data-reveal]");
-  // stagger siblings that share a parent
-  const groups = new Map();
-  revealEls.forEach((el) => {
-    const parent = el.parentElement;
-    if (!groups.has(parent)) groups.set(parent, 0);
-    const idx = groups.get(parent);
-    el.style.setProperty("--d", `${Math.min(idx * 0.09, 0.45)}s`);
-    groups.set(parent, idx + 1);
-  });
-
-  if ("IntersectionObserver" in window && !reduceMotion) {
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("is-in");
-            io.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
-    );
-    revealEls.forEach((el) => io.observe(el));
-  } else {
-    revealEls.forEach((el) => el.classList.add("is-in"));
-  }
-
-  /* ---------- experience accordion ---------- */
-  document.querySelectorAll(".job__row").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const job = btn.closest(".job");
-      const open = job.classList.toggle("open");
-      btn.setAttribute("aria-expanded", String(open));
-    });
-  });
-
-  /* ---------- marquee: fill track, then double for seamless -50% loop ---------- */
-  const setupMarquees = () => {
-    document.querySelectorAll(".marquee").forEach((marquee) => {
-      const track = marquee.querySelector(".marquee__track");
-      if (!track.dataset.unit) track.dataset.unit = track.innerHTML;
-      track.innerHTML = track.dataset.unit;
-      let width = track.scrollWidth;
-      const target = marquee.clientWidth * 1.25;
-      let guard = 0;
-      while (width < target && guard < 10) {
-        track.innerHTML += track.dataset.unit;
-        width = track.scrollWidth;
-        guard++;
-      }
-      track.innerHTML += track.innerHTML; // exact duplicate → translateX(-50%) loops clean
-      // constant speed regardless of track length or viewport, so both rows
-      // (and mobile) glide at the same rate
-      const PX_PER_SEC = marquee.classList.contains("marquee--alt") ? 52 : 62;
-      track.style.animationDuration = track.scrollWidth / 2 / PX_PER_SEC + "s";
-    });
-  };
-  setupMarquees();
-  // widths change when the web fonts swap in; measure again once they're ready
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(setupMarquees);
-  }
-
-  /* ---------- clocks (Seattle) ---------- */
-  const clockEls = document.querySelectorAll("[data-clock]");
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Los_Angeles",
-  });
-  const tick = () => clockEls.forEach((el) => (el.textContent = fmt.format(new Date())));
-  tick();
-  setInterval(tick, 10_000);
-
-  /* ---------- scroll progress ---------- */
-  const progress = document.querySelector(".progress");
-  let progressQueued = false;
-  const paintProgress = () => {
-    const doc = document.documentElement;
-    const max = doc.scrollHeight - window.innerHeight;
-    progress.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`;
-    progressQueued = false;
-  };
-  window.addEventListener(
-    "scroll",
-    () => {
-      if (!progressQueued) {
-        progressQueued = true;
-        requestAnimationFrame(paintProgress);
-      }
-    },
-    { passive: true }
-  );
-  paintProgress();
-
-  /* ---------- off-the-clock: tossable photo cards ---------- */
-  const PHOTOS = {
-    hike: {
-      src: "assets/hike.jpg", thumb: "assets/hike-thumb.jpg", w: 800, h: 1200,
-      cardW: 220, alt: "Hiking trail above an alpine lake in the PNW, a dog leading the way",
-      cap: "PNW trails, best hiking buddy",
-    },
-    camp: {
-      src: "assets/camp.jpg", thumb: "assets/camp-thumb.jpg", w: 1130, h: 1200,
-      cardW: 250, alt: "Tent pitched beside a deep green alpine lake",
-      cap: "camp, somewhere quiet",
-    },
-    paddle: {
-      src: "assets/paddle.jpg", thumb: "assets/paddle-thumb.jpg", w: 1200, h: 678,
-      cardW: 320, alt: "Two paddle boarders on glassy Lake Tahoe below snowy mountains",
-      cap: "Lake Tahoe, glass water",
-    },
-    aoe: { text: true, cardW: 210, cap: "one more game, I promise" },
-  };
-
-  const layer = document.querySelector(".photo-layer");
-  const peek = document.querySelector(".toss-peek");
-  const live = new Map(); // key -> card state
-  let zTop = 1;
-  let physicsRunning = false;
-
-  const buildCard = (key) => {
-    const p = PHOTOS[key];
-    const fig = document.createElement("figure");
-    fig.className = "photo-card" + (p.text ? " photo-card--text" : "");
-    const scale = window.innerWidth < 700 ? 0.7 : 1;
-    fig.style.setProperty("--w", Math.round(p.cardW * scale) + "px");
-    if (p.text) {
-      fig.insertAdjacentHTML(
-        "afterbegin",
-        `<div class="photo-card__shout"><span class="serif">Wololo!</span><small>age of empires ii</small></div>`
-      );
-    } else {
-      const img = document.createElement("img");
-      img.src = p.src;
-      img.width = p.w;
-      img.height = p.h;
-      img.alt = p.alt;
-      img.draggable = false;
-      fig.appendChild(img);
-    }
-    fig.insertAdjacentHTML(
-      "beforeend",
-      `<figcaption>${p.cap}</figcaption><button class="photo-card__close" aria-label="Close photo">×</button>`
-    );
-    return fig;
-  };
-
-  const removeCard = (key) => {
-    const c = live.get(key);
-    if (!c) return;
-    live.delete(key);
-    c.el.classList.add("leaving");
-    setTimeout(() => c.el.remove(), 320);
-  };
-
-  let stillFrames = 0;
-  const physics = () => {
-    if (!live.size) { physicsRunning = false; return; }
-    const pad = 14;
-    let allSettled = true;
-    live.forEach((c) => {
-      const w = c.el.offsetWidth, h = c.el.offsetHeight;
-      if (c.dragging) {
-        c.vx = (c.tx - c.x) * 0.35;
-        c.vy = (c.ty - c.y) * 0.35;
-        c.x += c.vx;
-        c.y += c.vy;
-      } else {
-        // rubberband: spring back when past the edges
-        const minX = pad, minY = pad;
-        const maxX = window.innerWidth - w - pad;
-        const maxY = window.innerHeight - h - pad;
-        if (c.x < minX) c.vx += (minX - c.x) * 0.12;
-        if (c.x > maxX) c.vx += (maxX - c.x) * 0.12;
-        if (c.y < minY) c.vy += (minY - c.y) * 0.12;
-        if (c.y > maxY) c.vy += (maxY - c.y) * 0.12;
-        c.vx *= 0.92;
-        c.vy *= 0.92;
-        c.x += c.vx;
-        c.y += c.vy;
-      }
-      // tilt with horizontal velocity, settle back to base rotation
-      const target = c.baseRot + Math.max(-14, Math.min(14, c.vx * 0.7));
-      c.rot += (target - c.rot) * 0.12;
-      // jelly: squash-and-stretch aligned with the motion direction
-      const speed = Math.hypot(c.vx, c.vy);
-      const jellyTarget = Math.min(0.2, speed * 0.0075);
-      c.jelly = (c.jelly || 0) + (jellyTarget - (c.jelly || 0)) * 0.22;
-      if (speed > 1.2) c.jellyAng = Math.atan2(c.vy, c.vx);
-      let deform = "";
-      if (c.jelly > 0.004 && c.jellyAng !== undefined) {
-        deform =
-          ` rotate(${c.jellyAng}rad)` +
-          ` scale(${1 + c.jelly}, ${1 - c.jelly * 0.65})` +
-          ` rotate(${-c.jellyAng}rad)`;
-      }
-      c.el.style.transform = `translate(${c.x}px, ${c.y}px)${deform} rotate(${c.rot}deg)`;
-      if (c.dragging || Math.abs(c.vx) + Math.abs(c.vy) > 0.05 ||
-          Math.abs(target - c.rot) > 0.05 || c.jelly > 0.004) {
-        allSettled = false;
-      }
-    });
-    // sleep the loop once everything has come to rest
-    stillFrames = allSettled ? stillFrames + 1 : 0;
-    if (stillFrames > 30) { physicsRunning = false; return; }
-    requestAnimationFrame(physics);
-  };
-  const wakePhysics = () => {
-    stillFrames = 0;
-    if (!physicsRunning) { physicsRunning = true; requestAnimationFrame(physics); }
-  };
-  window.addEventListener("resize", () => { if (live.size) wakePhysics(); });
-
-  const nudge = (c) => {
-    c.vx += (Math.random() - 0.5) * 30;
-    c.vy -= 22;
-    c.baseRot = (Math.random() - 0.5) * 10;
-    c.el.style.zIndex = ++zTop;
-    wakePhysics();
-  };
-
-  const toss = (key, fromX, fromY, bias) => {
-    if (live.get(key)) {
-      // already out: give it a playful nudge instead of duplicating
-      nudge(live.get(key));
-      return;
-    }
-    const el = buildCard(key);
-    layer.appendChild(el);
-    const w = el.offsetWidth, h = el.offsetHeight;
-    const cx = window.innerWidth / 2 - w / 2;
-    const cy = window.innerHeight / 2 - h / 2;
-    const c = {
-      el,
-      x: reduceMotion ? cx : fromX - w / 2,
-      y: reduceMotion ? cy : fromY - h / 2,
-      vx: 0, vy: 0, rot: 0,
-      baseRot: (Math.random() - 0.5) * 10,
-      dragging: false, tx: 0, ty: 0,
-    };
-    // every card lands somewhere in the upper-right quadrant; overlap is fine
-    const dest = bias || { x: 0.62 + Math.random() * 0.26, y: 0.16 + Math.random() * 0.26 };
-    if (!reduceMotion) {
-      const destX = window.innerWidth * dest.x - w / 2 + (Math.random() - 0.5) * 60;
-      const destY = window.innerHeight * dest.y - h / 2 + (Math.random() - 0.5) * 40;
-      c.vx = (destX - c.x) * 0.09;
-      c.vy = (destY - c.y) * 0.09;
-      c.rot = (Math.random() - 0.5) * 24;
-    } else {
-      c.rot = c.baseRot;
-      c.x = window.innerWidth * dest.x - w / 2;
-      c.y = window.innerHeight * dest.y - h / 2;
-    }
-    el.style.zIndex = ++zTop;
-    el.style.transform = `translate(${c.x}px, ${c.y}px) rotate(${c.rot}deg)`;
-    live.set(key, c);
-    wakePhysics();
-
-    // dragging
-    el.addEventListener("pointerdown", (e) => {
-      if (e.target.closest(".photo-card__close")) return;
-      c.dragging = true;
-      c.offX = e.clientX - c.x;
-      c.offY = e.clientY - c.y;
-      c.tx = c.x; c.ty = c.y;
-      c.downX = e.clientX;
-      c.downY = e.clientY;
-      el.classList.add("grabbing");
-      el.style.zIndex = ++zTop;
-      el.setPointerCapture(e.pointerId);
-      wakePhysics();
-    });
-    el.addEventListener("pointermove", (e) => {
-      if (!c.dragging) return;
-      c.tx = e.clientX - c.offX;
-      c.ty = e.clientY - c.offY;
-    });
-    const drop = (e) => {
-      if (!c.dragging) return;
-      c.dragging = false;
-      el.classList.remove("grabbing");
-      // a press with no real movement is a tap: bounce instead of drop
-      if (e && Math.hypot(e.clientX - c.downX, e.clientY - c.downY) < 6 && !reduceMotion) {
-        nudge(c);
-      }
-    };
-    el.addEventListener("pointerup", drop);
-    el.addEventListener("pointercancel", () => drop());
-    el.querySelector(".photo-card__close").addEventListener("click", () => removeCard(key));
-  };
-
-  document.querySelectorAll(".toss").forEach((btn) => {
-    const key = btn.dataset.photo;
-    btn.addEventListener("click", (e) => {
-      const r = btn.getBoundingClientRect();
-      toss(key, e.clientX || r.left + r.width / 2, e.clientY || r.top);
-      peek.classList.remove("on");
-    });
-    // hover: preload + thumbnail peek
-    btn.addEventListener("mouseenter", () => {
-      const p = PHOTOS[key];
-      if (!p.thumb) return;
-      new Image().src = p.src; // warm the full-size image
-      peek.style.backgroundImage = `url(${p.thumb})`;
-      peek.classList.add("on");
-    });
-    btn.addEventListener("mouseleave", () => peek.classList.remove("on"));
-  });
-
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") [...live.keys()].forEach(removeCard);
-  });
-
-  // photos wander in on their own the first time About scrolls into view.
-  // no persistence, on purpose: close them all and they return on refresh.
-  const AUTO_SPAWN = [
-    { key: "hike", bias: { x: 0.7, y: 0.3 } },
-    { key: "camp", bias: { x: 0.85, y: 0.2 } },
-    { key: "paddle", bias: { x: 0.78, y: 0.38 } },
+  /* ---------- hero line: a 50/50 split between two drafts ---------- */
+  const LINES = [
+    "Software developer. Film developer. Happiest somewhere with no signal.",
+    "I develop things. Software by day, film by night, trails on the weekend.",
   ];
-  const aboutSection = document.querySelector("#about");
-  if (aboutSection && "IntersectionObserver" in window) {
-    const spawnIO = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0].isIntersecting) return;
-        spawnIO.disconnect();
-        AUTO_SPAWN.forEach(({ key, bias }, i) => {
-          setTimeout(() => {
-            const btn = document.querySelector(`.toss[data-photo="${key}"]`);
-            const r = btn.getBoundingClientRect();
-            toss(key, r.left + r.width / 2, r.top + r.height / 2, bias);
-          }, 200 + i * 280);
-        });
-      },
-      { threshold: 0.4 }
-    );
-    spawnIO.observe(aboutSection);
+  const lineIdx = params.get("line") === "2" ? 1 : params.get("line") === "1" ? 0 : Math.random() < 0.5 ? 0 : 1;
+  $("#line").textContent = LINES[lineIdx];
+
+  /* ---------- develop: name through Redaction's cuts, print through the shader ---------- */
+  const nameEl = $("#name");
+  const timer = $("#timer");
+  const DEV_MS = 2600;
+  let devStart = Infinity;
+  const develop = () => {
+    devStart = performance.now();
+    if (reduce) { devStart -= DEV_MS; nameEl.className = "name"; return; }
+    ["s100", "s70", "s35", ""].forEach((c, i) =>
+      setTimeout(() => (nameEl.className = "name " + c), i * 300));
+  };
+  nameEl.classList.add("s100");
+
+  // the hand waves once the name has developed, and again whenever you say hi back
+  const wave = $("#wave");
+  const waveHello = () => {
+    if (reduce) return;
+    wave.classList.remove("waving");
+    void wave.offsetWidth;
+    wave.classList.add("waving");
+  };
+  $("#hi").addEventListener("pointerenter", waveHello);
+  wave.addEventListener("click", waveHello);
+
+  const cv = $("#print-canvas");
+  const gl = cv.getContext("webgl", { premultipliedAlpha: false, antialias: false });
+  const FRAG = `
+    precision highp float;
+    uniform sampler2D tex; uniform vec2 res; uniform float t, seed; uniform int mode;
+    varying vec2 uv;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float lum(vec3 c){ return dot(c, vec3(.299, .587, .114)); }
+    void main(){
+      vec3 c = texture2D(tex, uv).rgb;
+      // halation: highlights in a small ring bleed red-orange into their surroundings
+      float h = 0.;
+      for (int i = 0; i < 16; i++) {
+        float a = float(i) * .3927;
+        for (int r = 1; r <= 2; r++) {
+          vec2 o = vec2(cos(a), sin(a)) * float(r) * 7. / res;
+          h += smoothstep(.72, .98, lum(texture2D(tex, uv + o).rgb));
+        }
+      }
+      c += vec3(1., .3, .12) * (h / 32.) * .55;
+      float L = lum(c);
+      if (mode == 1) c = vec3(pow(L, 1.08)) * vec3(1., .99, .965);
+      if (mode == 2) c = vec3(L, L * .2, L * .1) * .8;
+      // development: density builds, darkest tones arrive first
+      float k = smoothstep(0., 1., clamp((t * 1.45 - L * .62) / .38, 0., 1.));
+      vec3 paper = mode == 2 ? vec3(.26, .05, .03) : mode == 1 ? vec3(.922, .918, .902) : vec3(.945, .937, .918);
+      c = mix(paper, c, k);
+      // grain: re-seeded every frame, strongest in the midtones
+      float n = hash(floor(uv * res) + seed) - .5;
+      c += n * .075 * (1. - abs(L - .5) * 1.3);
+      gl_FragColor = vec4(c, 1.);
+    }`;
+  const VERT = `attribute vec2 p; varying vec2 uv;
+    void main(){ uv = vec2(p.x * .5 + .5, .5 - p.y * .5); gl_Position = vec4(p, 0., 1.); }`;
+  const U = {};
+  let glOk = false;
+  if (gl) {
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+    const pr = gl.createProgram();
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FRAG));
+    gl.bindAttribLocation(pr, 0, "p");
+    gl.linkProgram(pr);
+    glOk = gl.getProgramParameter(pr, gl.LINK_STATUS);
+    if (glOk) {
+      gl.useProgram(pr);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      ["res", "t", "seed", "mode"].forEach((n) => (U[n] = gl.getUniformLocation(pr, n)));
+    }
   }
+  const photo = new Image();
+  photo.src = "assets/hike.jpg";
+  const fitCanvas = () => {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = Math.round(cv.clientWidth * dpr);
+    cv.height = Math.round(cv.clientHeight * dpr);
+    if (glOk) gl.viewport(0, 0, cv.width, cv.height);
+  };
+  addEventListener("resize", fitCanvas);
+
+  let heroVisible = true;
+  new IntersectionObserver(([e]) => (heroVisible = e.isIntersecting)).observe($("#hero"));
+
+  Promise.all([photo.decode(), document.fonts.ready]).then(() => {
+    fitCanvas();
+    if (glOk) {
+      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, photo);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    }
+    develop();
+    heroStickers();
+    setTimeout(waveHello, reduce ? 0 : DEV_MS + 200);
+    let last = 0;
+    let drawn2d = false;
+    const frame = (now) => {
+      const t = Math.min(1, Math.max(0, (now - devStart) / DEV_MS));
+      const secs = Math.round(t * 90);
+      timer.textContent = t < 1 ? `Dev ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}` : "Dev 1:30 · fixed";
+      // grain ticks at 24fps, like film through a gate
+      if (glOk && heroVisible && now - last > 41) {
+        last = now;
+        gl.uniform2f(U.res, cv.width, cv.height);
+        gl.uniform1f(U.t, t);
+        gl.uniform1f(U.seed, reduce ? 1 : Math.floor(now / 41) % 97);
+        gl.uniform1i(U.mode, mode);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      } else if (!glOk && !drawn2d) {
+        cv.getContext("2d").drawImage(photo, 0, 0, cv.width, cv.height);
+        drawn2d = true;
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+
+  /* ---------- table engine: stickers and prints drift, can be thrown, stay where they land ---------- */
+  // one shared pointer, normalised to -1..1 around the viewport centre, for sticker parallax
+  const pointer = { x: 0, y: 0 };
+  if (matchMedia("(hover: hover)").matches) {
+    addEventListener("pointermove", (e) => {
+      pointer.x = (e.clientX / innerWidth) * 2 - 1;
+      pointer.y = (e.clientY / innerHeight) * 2 - 1;
+    }, { passive: true });
+  }
+  // liquid warp: one displacement filter per sticker, its strength driven by speed
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const filterDefs = $("svg[aria-hidden]");
+  let warpId = 0;
+  const makeWarp = () => {
+    const id = `warp-${warpId++}`;
+    const f = document.createElementNS(SVGNS, "filter");
+    f.setAttribute("id", id);
+    ["x", "y"].forEach((k) => f.setAttribute(k, "-25%"));
+    ["width", "height"].forEach((k) => f.setAttribute(k, "150%"));
+    f.innerHTML = `<feTurbulence type="fractalNoise" baseFrequency="0.011 0.019" numOctaves="2" seed="${warpId * 7}" result="t"/>` +
+      `<feDisplacementMap in="SourceGraphic" in2="t" scale="0" xChannelSelector="R" yChannelSelector="G"/>`;
+    filterDefs.appendChild(f);
+    return { id, disp: f.lastChild };
+  };
+
+  function makeTable(container, layer, { trail = false, warp = false, parallax = false } = {}) {
+    const items = [];
+    let running = false;
+    let visible = true;
+    let z = 10;
+    const TRAIL = 4, LAG = 3;
+
+    const local = (e) => {
+      const r = container.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+
+    const add = (el, home, opts = {}) => {
+      const mk = (cls) => {
+        const d = document.createElement("div");
+        d.className = "st" + cls;
+        d.style.width = opts.width + "px";
+        d.appendChild(cls ? el.cloneNode(true) : el);
+        layer.appendChild(d);
+        return d;
+      };
+      const ghosts = trail ? Array.from({ length: TRAIL }, () => mk(" ghost")) : [];
+      const node = mk("");
+      const it = {
+        node, ghosts, home, x: 0, y: 0, vx: 0, vy: 0, r: 0, vr: 0, hx: 0, hy: 0, hr: 0, s: 1,
+        ph: Math.random() * 6.28, held: false, free: false, moved: false, hist: [], swallow: null,
+        depth: 0.4 + Math.random() * 0.8, warp: warp ? makeWarp() : null, wv: 0, warping: false, inner: el,
+      };
+      items.push(it);
+      place(it, true);
+
+      node.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0 || it.swallow) return;
+        if (e.target.closest("button")) return;     // e.g. waldo, inside a print
+        e.preventDefault();
+        node.setPointerCapture(e.pointerId);
+        const p = local(e);
+        it.held = true; it.free = false; it.moved = true;
+        it.ox = p.x - it.x; it.oy = p.y - it.y;
+        it.vx = it.vy = 0;
+        node.classList.add("held");
+        raise(it);
+        wake();
+      });
+      node.addEventListener("pointermove", (e) => {
+        if (!it.held) return;
+        const p = local(e);
+        const nx = p.x - it.ox, ny = p.y - it.oy;
+        it.vx = it.vx * 0.4 + (nx - it.x) * 0.6;
+        it.vy = it.vy * 0.4 + (ny - it.y) * 0.6;
+        it.x = nx; it.y = ny;
+      });
+      const drop = () => {
+        if (!it.held) return;
+        it.held = false;
+        node.classList.remove("held");
+        it.free = true;
+        it.vr = it.vx * 0.35;
+      };
+      node.addEventListener("pointerup", drop);
+      node.addEventListener("pointercancel", drop);
+      return it;
+    };
+
+    const raise = (it) => { z++; it.ghosts.forEach((g) => (g.style.zIndex = z)); it.node.style.zIndex = ++z; };
+
+    // homes come from layout anchors, so they follow resizes until someone moves the sticker
+    function place(it, first) {
+      const h = it.home();
+      it.w = it.node.offsetWidth; it.h = it.node.offsetHeight;
+      if (!it.moved) { it.hx = h.x; it.hy = h.y; it.hr = h.r; }
+      if (first || !it.moved) { it.x = it.hx; it.y = it.hy; it.r = it.hr; }
+    }
+    let resolve = null;   // optional pass that nudges homes apart after layout
+    const relayout = () => {
+      items.forEach((it) => place(it, false));
+      if (resolve) {
+        resolve(items);
+        items.forEach((it) => { if (!it.moved && !it.free && !it.held) { it.x = it.hx; it.y = it.hy; } });
+      }
+    };
+    const setResolve = (fn) => { resolve = fn; };
+    addEventListener("resize", relayout);
+
+    const slap = (stagger = 0.09, delay = 0) => {
+      items.forEach((it, i) => {
+        it.node.classList.remove("slap");
+        void it.node.offsetWidth;
+        it.node.style.setProperty("--d", `${delay + i * stagger}s`);
+        if (!reduce) it.node.classList.add("slap");
+      });
+    };
+
+    const slapItem = (it, delay) => {
+      it.node.style.setProperty("--d", `${delay}s`);
+      if (!reduce) it.node.classList.add("slap");
+    };
+
+    const nudge = (it) => {
+      raise(it);
+      it.moved = true; it.free = true;
+      it.vx = (Math.random() - 0.5) * 26;
+      it.vy = -12 - Math.random() * 8;
+      it.vr = it.vx * 0.4;
+      wake();
+    };
+
+    const swallow = (to, done) => {
+      const t0 = performance.now();
+      items.forEach((it, i) => (it.swallow = { t0: t0 + i * 45, fx: it.x, fy: it.y, to }));
+      setTimeout(done, 700 + items.length * 45);
+      wake();
+    };
+    const restore = () => {
+      items.forEach((it) => { it.swallow = null; it.s = 1; it.moved = false; it.free = false; it.vx = it.vy = 0; place(it, true); });
+      relayout();
+      slap(0.07);
+    };
+
+    let lastT = performance.now();
+    const tick = (now) => {
+      const dt = Math.min(2, (now - lastT) / 16.67);
+      lastT = now;
+      const W = container.clientWidth, H = container.clientHeight;
+      for (const it of items) {
+        if (it.swallow) {
+          const k = Math.max(0, Math.min(1, (now - it.swallow.t0) / 520));
+          const e = k * k;
+          it.x = it.swallow.fx + (it.swallow.to.x - it.swallow.fx) * e;
+          it.y = it.swallow.fy + (it.swallow.to.y - it.swallow.fy) * e;
+          it.s = 1 - e;
+          it.r += 9 * dt * k;
+        } else if (it.held) {
+          it.r += (it.hr * 0.3 + it.vx * 0.6 - it.r) * 0.15;
+          it.vx *= 0.8; it.vy *= 0.8;               // pointermove refreshes these; holding still lets them settle
+        } else if (it.free) {
+          it.x += it.vx * dt; it.y += it.vy * dt;
+          const f = Math.pow(0.93, dt);
+          it.vx *= f; it.vy *= f; it.vr *= f;
+          it.r += it.vr * dt;
+          const mx = it.w * 0.25, my = it.h * 0.25;
+          if (it.x < mx) { it.x = mx; it.vx = Math.abs(it.vx) * 0.5; }
+          if (it.x > W - mx) { it.x = W - mx; it.vx = -Math.abs(it.vx) * 0.5; }
+          if (it.y < my) { it.y = my; it.vy = Math.abs(it.vy) * 0.5; }
+          if (it.y > H - my) { it.y = H - my; it.vy = -Math.abs(it.vy) * 0.5; }
+          if (Math.hypot(it.vx, it.vy) < 0.25) {
+            it.free = false;
+            it.hx = it.x; it.hy = it.y; it.hr = it.r; it.vx = it.vy = 0;
+          }
+        } else if (!reduce) {
+          // idle drift around home: slow, small, never in sync with its neighbours
+          const t = now / 1000;
+          const px = parallax ? -pointer.x * it.depth * 18 : 0;
+          const py = parallax ? -pointer.y * it.depth * 12 : 0;
+          const tx = it.hx + Math.sin(t * 0.55 + it.ph) * 7 + px;
+          const ty = it.hy + Math.cos(t * 0.43 + it.ph * 1.3) * 8 + py;
+          const tr = it.hr + Math.sin(t * 0.37 + it.ph) * 1.8;
+          it.vx = (it.vx + (tx - it.x) * 0.02 * dt) * 0.85;
+          it.vy = (it.vy + (ty - it.y) * 0.02 * dt) * 0.85;
+          it.x += it.vx * dt; it.y += it.vy * dt;
+          it.r += (tr - it.r) * 0.06 * dt;
+        }
+        // squash and stretch along the direction of travel
+        const speed = Math.hypot(it.vx, it.vy);
+        const k = it.swallow || reduce ? 0 : Math.min(0.24, speed * 0.014);
+        let stretch = "";
+        if (k > 0.01) {
+          const a = (Math.atan2(it.vy, it.vx) * 180) / Math.PI;
+          stretch = ` rotate(${a.toFixed(1)}deg) scale(${(1 + k).toFixed(3)},${(1 - k * 0.55).toFixed(3)}) rotate(${(-a).toFixed(1)}deg)`;
+        }
+        const tf = `translate(${(it.x - it.w / 2).toFixed(1)}px,${(it.y - it.h / 2).toFixed(1)}px)${stretch} rotate(${it.r.toFixed(2)}deg) scale(${it.s.toFixed(3)})`;
+        it.node.style.transform = tf;
+        if (it.warp) {
+          it.wv += (Math.min(30, Math.max(0, speed - 1.2) * 2.4) - it.wv) * 0.22;
+          if (it.wv > 0.6 && !reduce) {
+            if (!it.warping) { it.inner.style.filter = `url(#${it.warp.id})`; it.warping = true; }
+            it.warp.disp.setAttribute("scale", it.wv.toFixed(1));
+          } else if (it.warping) {
+            it.inner.style.filter = ""; it.warping = false;
+          }
+        }
+        if (it.ghosts.length) {
+          it.hist.unshift(tf);
+          it.hist.length = TRAIL * LAG + 1;
+          const o = it.swallow ? 0 : Math.min(0.42, Math.max(0, speed - 1.5) * 0.03);
+          it.ghosts.forEach((g, k) => {
+            g.style.transform = it.hist[(k + 1) * LAG] || tf;
+            g.style.opacity = (o * (1 - k * 0.2)).toFixed(3);
+          });
+        }
+      }
+      if (visible || items.some((it) => it.held || it.free || it.swallow)) requestAnimationFrame(tick);
+      else running = false;
+    };
+    const wake = () => { if (!running) { running = true; lastT = performance.now(); requestAnimationFrame(tick); } };
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) wake(); }).observe(container);
+
+    return { items, add, relayout, slap, slapItem, nudge, swallow, restore, wake, setResolve };
+  }
+
+  /* ---------- hero stickers: one riso print run ---------- */
+
+  const hero = $("#hero");
+  const anchors = () => {
+    const hr = hero.getBoundingClientRect();
+    const rel = (el) => { const r = el.getBoundingClientRect(); return { l: r.left - hr.left, t: r.top - hr.top, w: r.width, h: r.height }; };
+    return { N: rel($("#name-text")), L: rel($("#line")), P: rel($("#print")), H: { l: 0, t: 0, w: hr.width, h: hr.height } };
+  };
+  // [key, width at 1440, desktop slot, mobile slot]; slot = [anchor, ax, ay, dx, dy, rotation]
+  const STICKERS = [
+    ["muse", 112, ["P", 0, 0, -6, 52, -13], ["P", 1, 0, 26, 40, 10]],
+    ["worm", 146, ["P", 1, 1, -22, -112, 9], ["P", 0.86, 1, 0, 60, -6]],
+    ["monk", 92, ["P", 0, 0.5, -60, 10, -5], ["P", 1, 0.55, 34, 0, 6]],
+    ["dog", 158, ["L", 0.5, 1, 0, 110, 4], ["H", 0.3, 1, 0, -80, 3]],
+    ["canister", 78, ["L", 1, 0.55, 58, 0, 14], ["P", 1, 0.28, 36, 0, -9]],
+    ["camera", 168, ["H", 0.075, 1, 0, -122, -8], ["H", 0.2, 1, 0, -200, -8]],
+    ["cobra", 176, ["L", 0.14, 1, 0, 118, -4], ["H", 0.78, 1, 0, -205, -4]],
+    ["keycap", 106, ["H", 0.205, 1, 0, -70, -13], null],
+    ["duck", 118, ["H", 0.315, 1, 0, -150, 6], ["H", 0.5, 1, 0, -130, 7]],
+    ["terminal", 138, ["H", 0.43, 1, 0, -92, -4], ["H", 0.8, 1, 0, -110, -5]],
+    ["mountain", 186, ["H", 0.565, 1, 0, -150, 3], null],
+    ["tent", 128, ["P", 0.5, 1, 0, 64, -3], null],
+  ];
+  const narrow = () => innerWidth < 760;
+
+  // relax sticker homes: push them off each other and off the type, so any viewport stays tidy.
+  // stickers may still overlap a little (they are stickers), and may sit on the photo.
+  function spread(items) {
+    const hr = hero.getBoundingClientRect();
+    const rect = (el, shrinkY = 0) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left - hr.left + r.width / 2, y: r.top - hr.top + r.height / 2, w: r.width, h: r.height * (1 - shrinkY) };
+    };
+    const textRect = (el) => { const rg = document.createRange(); rg.selectNodeContents(el); return rg; };
+    const zone = (rg, shrinkY = 0) => {
+      const r = rg.getBoundingClientRect();
+      return { x: r.left - hr.left + r.width / 2, y: r.top - hr.top + r.height / 2, w: r.width + 16, h: r.height * (1 - shrinkY) + 12 };
+    };
+    const zones = [zone(textRect($("#name-text")), 0.25), zone(textRect($("#hi"))), zone(textRect($("#line"))), rect($(".print figcaption"))];
+    const W = hero.clientWidth, H = hero.clientHeight;
+    const free = items.filter((it) => !it.moved);
+    const push = (a, b, fixedB, k) => {
+      const ox = (a.w + b.w) / 2 * k - Math.abs(a.hx - b.x);
+      const oy = (a.h + b.h) / 2 * k - Math.abs(a.hy - b.y);
+      if (ox <= 0 || oy <= 0) return;
+      const m = fixedB ? 1 : 0.5;
+      if (ox < oy) { const d = (a.hx < b.x ? -ox : ox) * m; a.hx += d; if (!fixedB) b.x -= d; }
+      else { const d = (a.hy < b.y ? -oy : oy) * m; a.hy += d; if (!fixedB) b.y -= d; }
+    };
+    for (let iter = 0; iter < 60; iter++) {
+      for (let i = 0; i < free.length; i++) {
+        const a = free[i];
+        for (const z of zones) push(a, z, true, 1);
+        for (const o of items) {
+          if (o === a) continue;
+          push(a, { x: o.hx, y: o.hy, w: o.w, h: o.h }, o.moved, 0.8);
+        }
+        a.hx = Math.max(a.w * 0.3, Math.min(W - a.w * 0.3, a.hx));
+        a.hy = Math.max(a.h * 0.3, Math.min(H - a.h * 0.25, a.hy));
+      }
+    }
+  }
+
+  let heroTable = null;
+  function heroStickers() {
+    const layer = $("#hero-layer");
+    heroTable = makeTable(hero, layer, { trail: true, warp: true, parallax: true });
+    const scale = narrow() ? 0.56 : Math.max(0.8, Math.min(1.1, hero.clientWidth / 1296));
+    const list = STICKERS.filter(([, , , mob]) => !narrow() || mob);
+    const imgs = list.map(([key]) => {
+      const img = new Image();
+      img.src = `assets/stickers/riso-${key}.webp`;
+      img.alt = "";
+      img.draggable = false;
+      return img;
+    });
+    // add them all at once, settle the layout, then slap them down one by one
+    Promise.all(imgs.map((img) => img.decode().catch(() => {}))).then(() => {
+      list.forEach(([key, w, desk, mob], i) => {
+        const wrap = document.createElement("div");
+        wrap.className = "in";
+        wrap.appendChild(imgs[i]);
+        const home = () => {
+          const a = anchors();
+          const s = (narrow() ? mob : desk) || desk;
+          const A = a[s[0]];
+          return { x: A.l + A.w * s[1] + s[3], y: A.t + A.h * s[2] + s[4], r: s[5] };
+        };
+        const it = heroTable.add(wrap, home, { width: Math.round(w * scale) });
+        it.key = key;
+      });
+      heroTable.setResolve(spread);
+      heroTable.relayout();
+      heroTable.items.forEach((it, i) => heroTable.slapItem(it, 0.9 + i * 0.08));
+    });
+    setTimeout(() => heroTable && heroTable.relayout(), 1200);   // late font metrics
+  }
+
+  /* thumper: drum four steady beats on the empty table and the worm answers */
+  const beats = [];
+  let wormBusy = false;
+  hero.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".st, a, button")) return;
+    const now = performance.now();
+    beats.push(now);
+    while (beats.length > 4) beats.shift();
+    if (beats.length < 4 || wormBusy || !heroTable) return;
+    const gaps = beats.slice(1).map((b, i) => b - beats[i]);
+    const steady = Math.max(...gaps) / Math.min(...gaps) < 1.4 && gaps.every((g) => g > 220 && g < 950);
+    if (steady) { beats.length = 0; summonWorm(); }
+  });
+
+  function summonWorm() {
+    wormBusy = true;
+    const worm = document.createElement("div");
+    worm.className = "sandworm";
+    worm.innerHTML = `<img src="assets/stickers/riso-worm.webp" alt="">`;
+    hero.appendChild(worm);
+    rumble();
+    requestAnimationFrame(() => requestAnimationFrame(() => worm.classList.add("up")));
+    if (!reduce) hero.classList.add("quake");
+    setTimeout(() => {
+      const hr = hero.getBoundingClientRect(), wr = worm.getBoundingClientRect();
+      const to = { x: wr.left - hr.left + wr.width * 0.62, y: wr.top - hr.top + wr.height * 0.22 };
+      heroTable.swallow(to, () => {
+        worm.classList.remove("up");
+        hero.classList.remove("quake");
+        setTimeout(() => { worm.remove(); heroTable.restore(); wormBusy = false; }, 800);
+      });
+    }, 650);
+    console.log("%cThe spice must flow.", "color:#d2321e;font-family:monospace");
+  }
+
+  let audioCtx;
+  const ctx = () => {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  };
+  function rumble() {
+    try {
+      const a = ctx(), t = a.currentTime;
+      const len = a.sampleRate * 1.6;
+      const buf = a.createBuffer(1, len, a.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.sin((i / len) * Math.PI);
+      const src = a.createBufferSource();
+      src.buffer = buf;
+      const lp = a.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 120;
+      const g = a.createGain();
+      g.gain.value = 0.5;
+      src.connect(lp); lp.connect(g); g.connect(a.destination);
+      src.start(t);
+    } catch (e) { /* no audio, the worm comes anyway */ }
+  }
+
+  /* ---------- off the clock: tossable prints ---------- */
+  const clock = $("#off-the-clock");
+  const clockTable = makeTable(clock, $("#clock-layer"));
+  const WALDO = `<svg viewBox="0 0 14 20" aria-hidden="true"><circle cx="7" cy="1.6" r="1.4" fill="#f4f1e9"/><rect x="3.2" y="2.4" width="7.6" height="1.9" rx=".6" fill="#e03131"/><rect x="4.1" y="5.6" width="5.8" height="3.9" rx="1.9" fill="#eecfa8"/><rect x="3.2" y="9.7" width="7.6" height="1.4" fill="#e03131"/><rect x="3.2" y="11.1" width="7.6" height="1.4" fill="#f4f1e9"/><rect x="3.2" y="12.5" width="7.6" height="1.4" fill="#e03131"/><rect x="3.8" y="15.3" width="6.4" height="3.4" fill="#2b4c9b"/></svg>`;
+  const PRINTS = {
+    hike: { src: "assets/hike.jpg", w: 800, h: 1200, width: 236, cap: "PNW, best hiking buddy",
+      alt: "A dog leading the way on a trail above an alpine lake", at: [0.3, 0.3, -6] },
+    camp: { src: "assets/camp.jpg", w: 1130, h: 1200, width: 270, cap: "Camp, somewhere quiet",
+      alt: "Tents pitched beside a deep green alpine lake", at: [0.74, 0.26, 5], waldo: [24.5, 77] },
+    paddle: { src: "assets/paddle.jpg", w: 1200, h: 678, width: 340, cap: "Lake Tahoe, glass water",
+      alt: "Two paddle boarders on glassy Lake Tahoe below snowy mountains", at: [0.5, 0.76, -3] },
+  };
+  const tableArea = $("#clock-table");
+  const printItems = {};
+  Object.entries(PRINTS).forEach(([key, p]) => {
+    const fig = document.createElement("figure");
+    fig.className = "photo in";
+    fig.style.margin = "0";
+    fig.innerHTML = `<div style="position:relative"><img src="${p.src}" width="${p.w}" height="${p.h}" alt="${p.alt}" draggable="false"></div><figcaption class="mono">${p.cap}</figcaption>`;
+    if (p.waldo) {
+      const b = document.createElement("button");
+      b.className = "waldo";
+      b.setAttribute("aria-label", "Wait, is that him?");
+      b.style.left = p.waldo[0] + "%";
+      b.style.top = p.waldo[1] + "%";
+      b.innerHTML = WALDO + `<span class="waldo__tag mono">you found him</span>`;
+      b.addEventListener("click", () => {
+        b.classList.add("found");
+        console.log("%c( you found him )", "color:#e03131;font-family:monospace");
+        setTimeout(() => b.classList.remove("found"), 2600);
+      });
+      fig.firstElementChild.appendChild(b);
+    }
+    const home = () => {
+      const cr = clock.getBoundingClientRect(), tr = tableArea.getBoundingClientRect();
+      return { x: tr.left - cr.left + tr.width * p.at[0], y: tr.top - cr.top + tr.height * p.at[1], r: p.at[2] };
+    };
+    const width = Math.round(p.width * (narrow() ? 0.66 : 1));
+    printItems[key] = clockTable.add(fig, home, { width });
+  });
+  // prints land on the table the first time it scrolls into view
+  $$("#clock-layer .st").forEach((n) => (n.style.visibility = "hidden"));
+  // decode early so a print never lands as an empty, grainy frame
+  const printsReady = Promise.all($$("#clock-layer img").map((i) => i.decode().catch(() => {})));
+  new IntersectionObserver(([e], io) => {
+    if (!e.isIntersecting) return;
+    io.disconnect();
+    printsReady.then(() => {
+      clockTable.relayout();
+      $$("#clock-layer .st").forEach((n) => (n.style.visibility = ""));
+      clockTable.slap(0.16, 0.05);
+    });
+  }, { threshold: 0.2 }).observe(clock);
+  $$(".toss").forEach((b) => b.addEventListener("click", () => clockTable.nudge(printItems[b.dataset.print])));
+
+  /* ---------- showcase: contact sheet + print dialog ---------- */
+  const v = (src, poster, w, h, cls = "") => ({ type: "video", src, poster, w, h, cls });
+  const im = (src, w, h, cls = "", alt = "") => ({ type: "img", src, w, h, cls, alt });
+  const WORK = [
+    {
+      title: "Muse Spark", code: "01A", still: "frame-spark", credit: "Media from ai.meta.com",
+      body: "Meta's frontier model. I build the SFT evaluation and benchmark systems behind it, and MetaCode, its coding harness.",
+      link: ["Read the announcement", "https://ai.meta.com/blog/introducing-muse-spark-msl/"],
+      media: [
+        im("muse-0", 1600, 900, "wide", "Introducing Muse Spark"),
+        v("muse-v2", "muse-v2-poster", 1080, 1080), v("muse-v3", "muse-v3-poster", 1080, 1080),
+        im("muse-1", 1600, 900, "wide", "Scaling observations from RL training"),
+        v("muse-v1", "muse-v1-poster", 1080, 1080), v("muse-v0", "muse-v0-poster", 1080, 1080),
+        im("muse-2", 1600, 1600, "", "Held-out codebase perplexity chart"), v("muse-v4", "muse-v4-poster", 1080, 1080),
+        im("muse-4", 1600, 650, "wide", "Benchmark comparison table"),
+      ],
+    },
+    {
+      title: "Business AI", code: "02A", still: "frame-bell", credit: "Media from about.fb.com",
+      body: "Measurement for Meta's business AI agents: did the agent actually change a business outcome? That answer cleared the way to general availability.",
+      link: ["Read the announcement", "https://about.fb.com/news/2026/06/meta-business-agent/"],
+      media: [
+        im("bizai-0", 1536, 864, "wide", "Meta Business Agent responds to customers 24/7"),
+        im("bizai-1", 1600, 1393, "third", "Business Agent in Messenger"),
+        im("bizai-2", 1600, 1393, "third", "Business Agent in WhatsApp"),
+        im("bizai-3", 1600, 1393, "third", "Business Agent in Instagram"),
+      ],
+    },
+    {
+      title: "Marketing Messages", code: "03A", still: "frame-letters", credit: "Media from business.whatsapp.com",
+      body: "Metrics and data flows for business messaging on WhatsApp. Modeled reporting under privacy constraints unblocked $6B in incremental revenue.",
+      link: ["Developer docs", "https://developers.facebook.com/documentation/business-messaging/whatsapp/marketing-messages/overview"],
+      media: [
+        im("mm-0", 1000, 667, "", "A small business owner preparing orders"),
+        im("mm-1", 1000, 667, "", "A customer opening a package at home"),
+        im("mm-2", 900, 600, "", "A shop owner in her store"),
+        im("mm-3", 900, 600, "", "A business owner working on a laptop"),
+      ],
+    },
+    {
+      title: "Commerce Insights", code: "04A", still: "frame-bags", credit: "Media from facebook.com/business",
+      body: "One consistent view of commerce across many stores, built on HLL sketches, query tuning and re-modeled views that cut months off development.",
+      link: ["Developer docs", "https://developers.facebook.com/documentation/ads-commerce/commerce-platform"],
+      media: [
+        im("commerce-0", 1414, 946, "fit", "A clothing rack in a shop"),
+        im("commerce-1", 600, 322, "fit", "A food truck business"),
+      ],
+    },
+    {
+      title: "Ads Measurement", code: "05A", still: "frame-tape", credit: "Media from facebook.com/business",
+      body: "A graph data-model redesign and Spark tuning for measurement pipelines at ads scale. Compute down 95%, storage down 96%.",
+      link: ["Developer docs", "https://developers.facebook.com/documentation/ads-commerce/conversions-api"],
+      media: [
+        im("capi-0", 1424, 1138, "", "A conversion chart over a product photo"),
+        v("capi-v0", null, 713, 572),
+      ],
+    },
+    { title: "Arrakis Runner", code: "06A", still: "frame-game", game: true },
+  ];
+
+  const LOOP = '<svg class="loop" viewBox="0 0 300 220" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M60 20 C138 4 264 7 285 66 C303 128 276 205 153 209 C39 213 6 158 15 97 C21 46 81 13 180 18"/></svg>';
+  const frames = $("#frames");
+  const dlg = $("#print-dialog");
+  const still = $("#pd-still");
+  const mediaBox = $("#pd-media");
+  let openImg = null;
+  const transition = (fn) => (document.startViewTransition && !reduce ? document.startViewTransition(fn) : (fn(), null));
+
+  const renderMedia = (w) => {
+    mediaBox.innerHTML = "";
+    w.media.forEach((m) => {
+      let el;
+      if (m.type === "video") {
+        el = document.createElement("video");
+        el.muted = true; el.loop = true; el.playsInline = true; el.preload = "none";
+        el.setAttribute("muted", "");
+        el.dataset.src = `assets/work/${m.src}.mp4`;
+        if (m.poster) el.poster = `assets/work/${m.poster}.webp`;
+        el.setAttribute("aria-hidden", "true");
+      } else {
+        el = document.createElement("img");
+        el.src = `assets/work/${m.src}.webp`;
+        el.alt = m.alt;
+        el.loading = "lazy";
+        el.decoding = "async";
+      }
+      el.width = m.w; el.height = m.h;
+      if (m.cls === "wide") el.className = "wide";
+      if (m.cls === "third") el.style.gridColumn = "span 1";
+      if (m.cls === "fit") { el.style.aspectRatio = "3 / 2"; el.style.objectFit = "cover"; }
+      mediaBox.appendChild(el);
+    });
+    mediaBox.style.gridTemplateColumns = w.media.some((m) => m.cls === "third") ? "repeat(3, minmax(0, 1fr))" : "";
+    $$(".wide", mediaBox).forEach((n) => (n.style.gridColumn = "1 / -1"));
+  };
+
+  const openPrint = (w, img) => {
+    openImg = img;
+    img.style.viewTransitionName = "print";
+    transition(() => {
+      img.style.viewTransitionName = "";
+      still.src = img.src;
+      still.alt = "";
+      $("#pd-edge").textContent = `Frame ${w.code}`;
+      $("#pd-title").textContent = w.title;
+      $("#pd-body").textContent = w.body;
+      $("#pd-link").innerHTML = `<a href="${w.link[1]}" target="_blank" rel="noopener noreferrer">${w.link[0]}</a>`;
+      $("#pd-credit").textContent = w.credit;
+      renderMedia(w);
+      still.style.viewTransitionName = "print";
+      dlg.showModal();
+      $(".pd", dlg).scrollTop = 0;
+      $$("video", mediaBox).forEach((vid) => { vid.src = vid.dataset.src; vid.play().catch(() => {}); });
+    });
+  };
+  const closePrint = () => {
+    $$("video", mediaBox).forEach((vid) => { vid.pause(); vid.removeAttribute("src"); vid.load(); });
+    const t = transition(() => {
+      still.style.viewTransitionName = "";
+      dlg.close();
+      if (openImg) openImg.style.viewTransitionName = "print";
+    });
+    const done = () => { if (openImg) { openImg.style.viewTransitionName = ""; openImg.closest(".fr").focus({ preventScroll: true }); } };
+    t ? t.finished.then(done, done) : done();
+  };
+  $("#pd-close").addEventListener("click", closePrint);
+  dlg.addEventListener("cancel", (e) => { e.preventDefault(); closePrint(); });
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) closePrint(); });
+
+  WORK.forEach((w) => {
+    const b = document.createElement("button");
+    b.className = "fr";
+    b.setAttribute("aria-label", w.game ? "Play Arrakis Runner" : `Open ${w.title}`);
+    b.innerHTML = `<div class="pic"><img src="assets/work/${w.still}.webp" alt="" ${w.game ? 'class="px"' : ""} loading="lazy" width="960" height="640"></div>` +
+      `<div class="edge mono"><span>${w.title}</span><span>▸ ${w.code}</span></div>${LOOP}`;
+    b.addEventListener("click", () => {
+      if (w.game) { if (window.__worm) window.__worm.open(b); return; }
+      openPrint(w, $("img", b));
+    });
+    frames.appendChild(b);
+  });
+
+  /* ---------- say hi: click to copy ---------- */
+  const email = $("#email");
+  const emailState = $(".email__state", email);
+  let copyTimer;
+  email.addEventListener("click", async () => {
+    const addr = email.dataset.email;
+    let ok = false;
+    try { await navigator.clipboard.writeText(addr); ok = true; } catch (e) {
+      const ta = document.createElement("textarea");
+      ta.value = addr; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+      ta.remove();
+    }
+    if (!ok) {
+      const range = document.createRange();
+      range.selectNodeContents($(".email__addr", email));
+      getSelection().removeAllRanges(); getSelection().addRange(range);
+    }
+    email.classList.toggle("copied", ok);
+    emailState.textContent = ok ? "Copied to clipboard" : "Selected, press ⌘C to copy";
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => { email.classList.remove("copied"); emailState.textContent = "Click to copy"; }, 2400);
+  });
 
   /* ---------- easter eggs ---------- */
-
-  // 1) AoE2 cheat codes, typed anywhere on the page.
-  //    "wololo": conversion wash, the accent flips between team colors,
-  //              and a monk glides across the bottom of the screen.
-  //    "how do you turn this on": the Shelby Cobra drives by.
-  const ACCENTS = ["#ff4d24", "#3a7bff"];
-  let accentIdx = 0;
-  let typed = "";
-  const wash = document.createElement("div");
-  wash.className = "wololo-wash";
-  const toast = document.createElement("div");
-  toast.className = "wololo-toast";
-  toast.textContent = "wololo";
-  document.body.append(wash, toast);
-
-  const MONK_SVG =
-    `<svg width="52" height="64" viewBox="0 0 26 32" fill="currentColor" aria-hidden="true">` +
-    `<path d="M13 1c-4 0-7 3-7 7 0 2 .6 3.4 1.4 4.4L4 29c-.3 1.2.5 2 1.6 2h14.8c1.1 0 1.9-.8 1.6-2l-3.4-16.6C19.4 11.4 20 10 20 8c0-4-3-7-7-7z"/>` +
-    `<circle cx="13" cy="8" r="3.4" fill="#0e0e0c"/>` +
-    `<rect x="22.4" y="6" width="2" height="18" rx="1"/>` +
-    `<rect x="20.4" y="9" width="6" height="2" rx="1"/>` +
-    `</svg>`;
-  const CAR_SVG =
-    `<svg width="104" height="42" viewBox="0 0 52 21" shape-rendering="crispEdges" aria-hidden="true">` +
-    `<rect x="3" y="9" width="46" height="6" fill="currentColor"/>` +
-    `<rect x="0" y="11" width="4" height="4" fill="currentColor"/>` +
-    `<rect x="15" y="4" width="16" height="5" fill="currentColor"/>` +
-    `<rect x="17" y="5" width="9" height="4" fill="#9fd9ff"/>` +
-    `<rect x="46" y="7" width="4" height="3" fill="currentColor"/>` +
-    `<circle cx="13" cy="16" r="4.2" fill="#14130f"/><circle cx="13" cy="16" r="1.6" fill="#eae7df"/>` +
-    `<circle cx="39" cy="16" r="4.2" fill="#14130f"/><circle cx="39" cy="16" r="1.6" fill="#eae7df"/>` +
-    `</svg>`;
-
-  // the "Wololo." word in About doubles as a typing-progress hint:
-  // the next expected letter blinks, typed letters lock to the accent color
-  const woloWord = document.querySelector(".wolo-word");
+  // "Wololo." doubles as a typing hint: the next letter blinks, typed letters turn red
+  const woloWord = $(".wolo-word");
   const woloLtrs = [];
   if (woloWord) {
     const txt = woloWord.textContent;
@@ -435,283 +774,117 @@
       const s = document.createElement("span");
       s.textContent = ch;
       s.setAttribute("aria-hidden", "true");
-      if (/[a-z]/i.test(ch)) {
-        s.className = "wolo-ltr";
-        woloLtrs.push(s);
-      }
+      if (/[a-z]/i.test(ch)) { s.className = "wolo-ltr"; woloLtrs.push(s); }
       woloWord.appendChild(s);
     });
   }
-  const setWoloProgress = (n, done) => {
-    woloLtrs.forEach((s, i) => {
-      s.classList.toggle("lit", done || i < n);
-      s.classList.toggle("next", !done && i === n);
-    });
-  };
-  setWoloProgress(0, false);
+  const setWolo = (n, done) => woloLtrs.forEach((s, i) => {
+    s.classList.toggle("lit", done || i < n);
+    s.classList.toggle("next", !done && i === n);
+  });
+  setWolo(0, false);
 
-  // wololo sound: plays assets/Wololo.mp3, falls back to a synthesized chant
-  // if the file is missing or playback is blocked. triggered by typing, which
-  // counts as user activation, so autoplay policy allows it.
   let woloAudio;
   const playWololo = () => {
     try {
-      if (!woloAudio) {
-        woloAudio = new Audio("assets/Wololo.mp3");
-        woloAudio.preload = "auto";
-        woloAudio.volume = 0.55;
-      }
+      woloAudio = woloAudio || Object.assign(new Audio("assets/Wololo.mp3"), { volume: 0.55 });
       woloAudio.currentTime = 0;
-      woloAudio.play().catch(playWololoSynth);
-    } catch (e) {
-      playWololoSynth();
-    }
+      woloAudio.play().catch(() => {});
+    } catch (e) { /* silent conversion */ }
   };
 
-  let audioCtx;
-  const playWololoSynth = () => {
+  // wololo: the monk walks on, casts, every grease-pencil mark changes team, then he walks off
+  let converted = false;
+  let monkBusy = false;
+  const convert = () => {
+    converted = !converted;
+    if (converted) root.style.setProperty("--red", "#2f62d6");
+    else root.style.removeProperty("--red");
+  };
+  const wololo = () => {
+    if (reduce || monkBusy) { convert(); playWololo(); return; }
+    monkBusy = true;
+    const m = document.createElement("div");
+    m.className = "monk-run walking";
+    m.setAttribute("aria-hidden", "true");
+    m.innerHTML = `<img src="assets/stickers/riso-monk.webp" alt=""><span class="bubble mono">Wololo!</span><span class="ring"></span><span class="ring"></span><span class="ring"></span>`;
+    document.body.appendChild(m);
+    const stop = innerWidth * 0.42;
+    const walk = m.animate([
+      { transform: "translateX(-120px)" },
+      { transform: `translateX(${stop}px)`, offset: 0.36 },
+      { transform: `translateX(${stop}px)`, offset: 0.64 },
+      { transform: `translateX(${innerWidth + 120}px)` },
+    ], { duration: 6400, fill: "forwards" });
+    setTimeout(() => { m.classList.replace("walking", "casting"); playWololo(); setTimeout(convert, 250); }, 2300);
+    setTimeout(() => m.classList.replace("casting", "walking"), 4100);
+    walk.finished.then(() => { m.remove(); monkBusy = false; });
+  };
+
+  // how do you turn this on: the Cobra tears across the bottom of the page
+  let carBusy = false;
+  const vroom = () => {
     try {
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-      const t0 = audioCtx.currentTime + 0.02;
-      const master = audioCtx.createGain();
-      master.gain.value = 0.13;
-      master.connect(audioCtx.destination);
-      const syllable = (t, f0, formFrom, formTo, dur) => {
-        const osc = audioCtx.createOscillator();
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(f0, t);
-        osc.frequency.linearRampToValueAtTime(f0 * 0.97, t + dur);
-        const formant = audioCtx.createBiquadFilter();
-        formant.type = "bandpass";
-        formant.Q.value = 4;
-        formant.frequency.setValueAtTime(formFrom, t);
-        formant.frequency.exponentialRampToValueAtTime(formTo, t + dur * 0.55);
-        const lp = audioCtx.createBiquadFilter();
-        lp.type = "lowpass";
-        lp.frequency.value = 1300;
-        const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(1, t + 0.05);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        osc.connect(formant); formant.connect(lp); lp.connect(g); g.connect(master);
-        osc.start(t);
-        osc.stop(t + dur + 0.05);
-      };
-      syllable(t0, 165, 320, 780, 0.34);         // wo
-      syllable(t0 + 0.3, 220, 520, 900, 0.3);    // LO
-      syllable(t0 + 0.58, 185, 500, 820, 0.46);  // lo
-    } catch (e) { /* no audio, no problem */ }
+      const a = ctx(), t = a.currentTime;
+      const o = a.createOscillator(), lp = a.createBiquadFilter(), g = a.createGain();
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(55, t);
+      o.frequency.exponentialRampToValueAtTime(190, t + 0.9);
+      o.frequency.exponentialRampToValueAtTime(120, t + 1.1);
+      o.frequency.exponentialRampToValueAtTime(260, t + 2);
+      lp.type = "lowpass"; lp.frequency.value = 700;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.09, t + 0.15);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+      o.connect(lp); lp.connect(g); g.connect(a.destination);
+      o.start(t); o.stop(t + 2.5);
+    } catch (e) { /* silent drive-by */ }
+  };
+  const cobra = () => {
+    if (reduce || carBusy) return;
+    carBusy = true;
+    const c = document.createElement("div");
+    c.className = "cobra-run";
+    c.setAttribute("aria-hidden", "true");
+    c.innerHTML = `<div class="cobra-run__lines"></div><img src="assets/stickers/riso-cobra.webp" alt="">`;
+    document.body.appendChild(c);
+    const drive = c.animate([{ transform: "translateX(-300px)" }, { transform: `translateX(${innerWidth + 320}px)` }],
+      { duration: 2900, easing: "cubic-bezier(.55, 0, .85, .45)", fill: "forwards" });
+    const puffs = setInterval(() => {
+      const r = c.getBoundingClientRect();
+      const p = document.createElement("span");
+      p.className = "puff";
+      p.style.left = r.left - 4 + "px";
+      p.style.top = r.bottom - 34 + "px";
+      document.body.appendChild(p);
+      p.animate([{ opacity: 0.7, transform: "scale(.4)" }, { opacity: 0, transform: "translate(-30px,-14px) scale(2.2)" }], { duration: 750, easing: "ease-out" })
+        .finished.then(() => p.remove());
+    }, 80);
+    vroom();
+    drive.finished.then(() => { clearInterval(puffs); c.remove(); carBusy = false; });
   };
 
-  const runCheat = (variant, label, svg, lifeMs) => {
-    const d = document.createElement("div");
-    d.className = `cheat-runner cheat-runner--${variant}`;
-    d.innerHTML = `<span class="cheat-runner__label">${label}</span>${svg}`;
-    document.body.appendChild(d);
-    setTimeout(() => d.remove(), lifeMs);
-  };
-
-  window.addEventListener("keydown", (e) => {
-    if (e.key.length !== 1) return;
+  let typed = "";
+  addEventListener("keydown", (e) => {
+    if (e.key.length !== 1 || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest && e.target.closest("input, textarea")) return;
     typed = (typed + e.key.toLowerCase()).slice(-30);
-    // hint progress: longest suffix of the buffer that is a prefix of "wololo"
-    let woloProg = 0;
-    for (let n = 6; n > 0; n--) {
-      if (typed.endsWith("wololo".slice(0, n))) { woloProg = n; break; }
-    }
-    if (woloProg === 6) {
-      setWoloProgress(6, true);
-      setTimeout(() => setWoloProgress(0, false), 1500);
-    } else {
-      setWoloProgress(woloProg, false);
-    }
+    let prog = 0;
+    for (let n = 6; n > 0; n--) if (typed.endsWith("wololo".slice(0, n))) { prog = n; break; }
+    setWolo(prog === 6 ? 6 : prog, prog === 6);
     if (typed.endsWith("wololo")) {
       typed = "";
-      accentIdx = 1 - accentIdx;
-      document.documentElement.style.setProperty("--accent", ACCENTS[accentIdx]);
-      document.dispatchEvent(new CustomEvent("vr:accent"));
-      document.dispatchEvent(new CustomEvent("vr:shock"));
-      if (!reduceMotion) {
-        for (const el of [wash, toast]) {
-          el.classList.remove("go");
-          void el.offsetWidth; // restart animation
-          el.classList.add("go");
-        }
-        runCheat("monk", "wololo", MONK_SVG, 7000);
-      }
-      playWololo();
+      setTimeout(() => setWolo(0, false), 1500);
+      wololo();
     } else if (typed.endsWith("how do you turn this on")) {
       typed = "";
-      if (!reduceMotion) runCheat("car", "vroom", CAR_SVG, 4300);
+      cobra();
     }
   });
 
-  // hover a work card: a quiet shower of its icon, clipped inside the card
-  document.querySelectorAll(".card[data-icon]").forEach((card) => {
-    const iconSvg = card.querySelector(".card__icon svg");
-    if (!iconSvg) return;
-    let lastRain = 0;
-    card.addEventListener("mouseenter", () => {
-      if (reduceMotion) return;
-      const now = Date.now();
-      if (now - lastRain < 1200) return;
-      lastRain = now;
-      for (let i = 0; i < 7; i++) {
-        const s = document.createElement("span");
-        s.className = "glyph-drop";
-        s.appendChild(iconSvg.cloneNode(true));
-        s.style.left = 5 + Math.random() * 88 + "%";
-        s.style.width = 14 + Math.random() * 16 + "px";
-        s.style.animationDelay = Math.random() * 0.3 + "s";
-        card.appendChild(s);
-        setTimeout(() => s.remove(), 1600);
-      }
-    });
-  });
-
-  // 2) hero letters become individually poke-able once the intro settles
-  document.querySelectorAll(".ltr").forEach((el) => {
-    el.addEventListener("animationend", () => el.classList.add("done"), { once: true });
-  });
-
-  // 3) devtools peeper: cartoon eyes slide in and stare at the inspector
-  if (!reduceMotion) {
-    const peepEl = document.createElement("div");
-    peepEl.className = "peep";
-    peepEl.dataset.side = "right";
-    peepEl.setAttribute("aria-hidden", "true");
-    peepEl.innerHTML =
-      `<div class="peep__eyes">` +
-      `<span class="peep__eye"><span class="peep__pupil"></span></span>` +
-      `<span class="peep__eye"><span class="peep__pupil"></span></span>` +
-      `</div><span class="peep__tag">inspecting the inspector?</span>`;
-    document.body.appendChild(peepEl);
-
-    let peepTimer;
-    let dockedOpen = false;
-    const showPeep = (side) => {
-      peepEl.dataset.side = side;
-      peepEl.classList.add("on");
-      clearTimeout(peepTimer);
-      peepTimer = setTimeout(() => peepEl.classList.remove("on"), 8000);
-    };
-
-    // docked devtools: the window's outer/inner size delta gives the dock side
-    setInterval(() => {
-      const dRight = window.outerWidth - window.innerWidth > 170;
-      const dBottom = window.outerHeight - window.innerHeight > 170;
-      const open = dRight || dBottom;
-      if (open && !dockedOpen) showPeep(dBottom && !dRight ? "bottom" : "right");
-      if (!open && dockedOpen) peepEl.classList.remove("on");
-      dockedOpen = open;
-    }, 600);
-
-    // undocked devtools: this image's id getter only runs when the console
-    // actually renders the log entry, i.e. when someone opens it
-    const bait = new Image();
-    Object.defineProperty(bait, "id", {
-      get() {
-        if (!dockedOpen) showPeep("right");
-        return "👀";
-      },
-    });
-    console.log("%c", "", bait);
-  }
-
-  // 4) he's on the footer line. click him.
-  const waldo = document.querySelector(".waldo");
-  if (waldo) {
-    waldo.addEventListener("click", () => {
-      waldo.classList.add("found");
-      console.log("%c( you found him )", "color:#e03131; font-family:monospace;");
-      setTimeout(() => waldo.classList.remove("found"), 2600);
-    });
-  }
-
-  // 5) a note for people who open the console
   console.log(
-    "%cV–R" +
-      "%c\n\nHey, you found the console." +
-      "\nTry typing  w o l o l o  anywhere on the page." +
-      "\n\nsreenivasan.ramesh@gmail.com",
-    "font-size:40px; font-weight:bold; color:#ff4d24; font-family:Georgia,serif;",
-    "font-size:12px; color:#8f8c83; font-family:monospace;"
+    "%cVasan%c\n\nYou found the console. Two more:\n· type  w o l o l o  anywhere\n· drum four steady beats on the light table\n\nsreenivasan.ramesh@gmail.com",
+    "font: 40px Georgia, serif; color: #151311;",
+    "font: 12px monospace; color: #6f6a62;"
   );
-
-  /* ---------- custom cursor + magnetic elements (desktop only) ---------- */
-  if (finePointer && !reduceMotion) {
-    const dot = document.querySelector(".cursor");
-    const ring = document.querySelector(".cursor-ring");
-    const mouse = { x: -100, y: -100 };
-    const ringPos = { x: -100, y: -100 };
-    let cursorLive = false;
-
-    window.addEventListener(
-      "mousemove",
-      (e) => {
-        mouse.x = e.clientX;
-        mouse.y = e.clientY;
-        if (!cursorLive) {
-          cursorLive = true;
-          ringPos.x = mouse.x;
-          ringPos.y = mouse.y;
-          document.body.classList.add("cursor-on");
-        }
-      },
-      { passive: true }
-    );
-
-    const hoverables = "a, button, .magnetic";
-    document.addEventListener("mouseover", (e) => {
-      if (e.target.closest(hoverables)) document.body.classList.add("cursor-hover");
-    });
-    document.addEventListener("mouseout", (e) => {
-      if (e.target.closest(hoverables)) document.body.classList.remove("cursor-hover");
-    });
-
-    /* magnetic pull */
-    const magnets = [...document.querySelectorAll(".magnetic")].map((el) => ({
-      el,
-      x: 0,
-      y: 0,
-      tx: 0,
-      ty: 0,
-    }));
-    magnets.forEach((m) => {
-      m.el.addEventListener("mousemove", (e) => {
-        const r = m.el.getBoundingClientRect();
-        m.tx = (e.clientX - (r.left + r.width / 2)) * 0.32;
-        m.ty = (e.clientY - (r.top + r.height / 2)) * 0.32;
-      });
-      m.el.addEventListener("mouseleave", () => {
-        m.tx = 0;
-        m.ty = 0;
-      });
-    });
-
-    const lerp = (a, b, t) => a + (b - a) * t;
-    const peekEl = document.querySelector(".toss-peek");
-    const peekPos = { x: -200, y: -200 };
-    const loop = () => {
-      dot.style.transform = `translate(${mouse.x}px, ${mouse.y}px)`;
-      ringPos.x = lerp(ringPos.x, mouse.x, 0.16);
-      ringPos.y = lerp(ringPos.y, mouse.y, 0.16);
-      ring.style.transform = `translate(${ringPos.x}px, ${ringPos.y}px)`;
-      peekPos.x = lerp(peekPos.x, mouse.x, 0.22);
-      peekPos.y = lerp(peekPos.y, mouse.y, 0.22);
-      peekEl.style.transform = `translate(${peekPos.x + 22}px, ${peekPos.y - 130}px)`;
-      magnets.forEach((m) => {
-        m.x = lerp(m.x, m.tx, 0.18);
-        m.y = lerp(m.y, m.ty, 0.18);
-        if (Math.abs(m.x) > 0.05 || Math.abs(m.y) > 0.05) {
-          m.el.style.transform = `translate(${m.x}px, ${m.y}px)`;
-        } else if (m.el.style.transform) {
-          m.el.style.transform = "";
-        }
-      });
-      requestAnimationFrame(loop);
-    };
-    requestAnimationFrame(loop);
-  }
 })();
