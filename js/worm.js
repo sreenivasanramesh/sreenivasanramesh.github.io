@@ -21,12 +21,33 @@
   const closeBtn = document.getElementById("worm-close");
 
   /* ---------- palette: read from the page so every lighting mode applies ---------- */
-  const hex = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec(h.trim()); const v = m ? parseInt(m[1], 16) : 0; return [v >> 16, (v >> 8) & 255, v & 255]; };
+  const parseColor = (str) => {
+    if (!str) return [0, 0, 0];
+    str = str.trim();
+    const mHex = /^#?([0-9a-f]{6})$/i.exec(str);
+    if (mHex) {
+      const v = parseInt(mHex[1], 16);
+      return [v >> 16, (v >> 8) & 255, v & 255];
+    }
+    const mRgb = /^rgba?\s*\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i.exec(str);
+    if (mRgb) return [Math.round(+mRgb[1]), Math.round(+mRgb[2]), Math.round(+mRgb[3])];
+    return [0, 0, 0];
+  };
   const mix = (a, b, t) => `rgb(${a.map((x, i) => Math.round(x + (b[i] - x) * t)).join(",")})`;
   let C = {};
   const readPalette = () => {
     const cs = getComputedStyle(document.documentElement);
-    const paper = hex(cs.getPropertyValue("--paper")), ink = hex(cs.getPropertyValue("--ink")), red = hex(cs.getPropertyValue("--red"));
+    const paper = parseColor(cs.getPropertyValue("--paper")), ink = parseColor(cs.getPropertyValue("--ink"));
+    let red = parseColor(cs.getPropertyValue("--red"));
+    const isSilver = document.documentElement.classList.contains("silver");
+    const isSafe = document.documentElement.classList.contains("safe");
+    if (isSilver) {
+      // in B&W / silver gelatin mode, map red accent to a rich silver tone
+      red = [80, 80, 80];
+    } else if (isSafe) {
+      // safelight bright red accent (avoid waiting on 1.4s CSS transition)
+      red = [255, 90, 60];
+    }
     const dark = (paper[0] + paper[1] + paper[2]) / 3 < 100;
     C = {
       bg: mix(paper, ink, 0), sun: mix(red, paper, 0.08), duneFar: mix(paper, ink, 0.07), duneNear: mix(paper, ink, 0.12),

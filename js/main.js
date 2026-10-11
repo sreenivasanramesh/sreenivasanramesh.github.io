@@ -188,6 +188,7 @@
     let running = false;
     let visible = true;
     let z = 10;
+    let locked = false;
     const TRAIL = 4, LAG = 3;
 
     const local = (e) => {
@@ -215,12 +216,14 @@
       place(it, true);
 
       node.addEventListener("pointerdown", (e) => {
-        if (e.button !== 0 || it.swallow) return;
+        if (e.button !== 0 || it.swallow || locked) return;
         if (e.target.closest("button")) return;     // e.g. waldo, inside a print
         e.preventDefault();
-        node.setPointerCapture(e.pointerId);
+        try { node.setPointerCapture(e.pointerId); } catch (_) {}
         const p = local(e);
-        it.held = true; it.free = false; it.moved = true;
+        it.held = true; it.free = false;
+        it.dragged = false;
+        it.downX = e.clientX; it.downY = e.clientY;
         it.ox = p.x - it.x; it.oy = p.y - it.y;
         it.vx = it.vy = 0;
         node.classList.add("held");
@@ -229,21 +232,43 @@
       });
       node.addEventListener("pointermove", (e) => {
         if (!it.held) return;
+        if (!it.dragged) {
+          if (Math.hypot(e.clientX - it.downX, e.clientY - it.downY) > 8) {
+            it.dragged = true;
+            it.moved = true;
+          } else {
+            return;
+          }
+        }
         const p = local(e);
         const nx = p.x - it.ox, ny = p.y - it.oy;
         it.vx = it.vx * 0.4 + (nx - it.x) * 0.6;
         it.vy = it.vy * 0.4 + (ny - it.y) * 0.6;
         it.x = nx; it.y = ny;
       });
-      const drop = () => {
+      const drop = (e) => {
+        if (!it.held) return;
+        const wasDragged = it.dragged;
+        it.held = false;
+        node.classList.remove("held");
+        if (wasDragged) {
+          it.free = true;
+          it.vr = it.vx * 0.35;
+        } else {
+          it.vx = it.vy = 0;
+          if (it.onClick) it.onClick(e);
+        }
+      };
+      node.addEventListener("pointerup", drop);
+      node.addEventListener("pointercancel", () => {
         if (!it.held) return;
         it.held = false;
         node.classList.remove("held");
-        it.free = true;
-        it.vr = it.vx * 0.35;
-      };
-      node.addEventListener("pointerup", drop);
-      node.addEventListener("pointercancel", drop);
+        if (it.dragged) {
+          it.free = true;
+          it.vr = it.vx * 0.35;
+        }
+      });
       return it;
     };
 
@@ -379,8 +404,19 @@
     };
     const wake = () => { if (!running) { running = true; lastT = performance.now(); requestAnimationFrame(tick); } };
     new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) wake(); }).observe(container);
+    const setLocked = (v) => {
+      locked = !!v;
+      if (locked) {
+        items.forEach((it) => {
+          if (it.held) {
+            it.held = false;
+            it.node.classList.remove("held");
+          }
+        });
+      }
+    };
 
-    return { items, add, relayout, slap, slapItem, nudge, swallow, restore, wake, setResolve };
+    return { items, add, relayout, slap, slapItem, nudge, swallow, restore, wake, setResolve, setLocked };
   }
 
   /* ---------- hero stickers: one riso print run ---------- */
@@ -389,28 +425,82 @@
   const anchors = () => {
     const hr = hero.getBoundingClientRect();
     const rel = (el) => { const r = el.getBoundingClientRect(); return { l: r.left - hr.left, t: r.top - hr.top, w: r.width, h: r.height }; };
-    return { N: rel($("#name-text")), L: rel($("#line")), P: rel($("#print")), H: { l: 0, t: 0, w: hr.width, h: hr.height } };
+    const L = rel($("#line")), P = rel($("#print"));
+    const tw = Math.max(300, P.l - L.l);
+    const tt = L.t + L.h;
+    // Bounded vertical space that is guaranteed to stay within the viewport fold on any aspect ratio
+    const maxBottom = Math.min(hr.height, window.innerHeight - hr.top) - 55;
+    const th = Math.max(170, maxBottom - (tt + 18));
+    return {
+      N: rel($("#name-text")),
+      L,
+      P,
+      H: { l: 0, t: 0, w: hr.width, h: hr.height },
+      T: { l: L.l, t: tt + 18, w: tw, h: th },
+    };
   };
-  // [key, width at 1440, desktop slot, mobile slot]; slot = [anchor, ax, ay, dx, dy, rotation]
+
+  // Desktop slots: 12 organically undulating, staggered desk positions (never two straight lines)
+  const DESK_SLOTS = [
+    // Column 1 (left)
+    ["T", 0.05, 0.28, -5],
+    ["T", 0.08, 0.62, -4],
+    // Column 2
+    ["T", 0.26, 0.44,  0],
+    ["T", 0.23, 0.82, -4],
+    // Column 3
+    ["T", 0.42, 0.18, -2],
+    ["T", 0.44, 0.65,  2],
+    // Column 4
+    ["T", 0.58, 0.38,  0],
+    ["T", 0.62, 0.84, -8],
+    // Column 5
+    ["T", 0.76, 0.22,  4],
+    ["T", 0.72, 0.66,  0],
+    // Column 6 (right, towards #print)
+    ["T", 0.90, 0.40,  1],
+    ["T", 0.95, 0.74,  0],
+  ];
+
+  // Mobile slots: 2 along the right edge of the photo, 5 spread out below as you scroll
+  const MOB_SLOTS = [
+    // 0: Upper-right of photo frame (overlapping photo border)
+    ["P", 0.94, 0.22, 0, 0, -4],
+    // 1: Lower-right of photo frame (pushed out to the right margin)
+    ["P", 1.02, 0.66, 0, 0,  2],
+    // 2: Just below photo caption on the right
+    ["P", 0.90, 1.00, 0, 60,  4],
+    // 3: Just below photo caption on the left
+    ["P", 0.18, 1.00, 0, 78, -3],
+    // 4: Center, staggered in the middle space
+    ["P", 0.52, 1.00, 0, 195,  1],
+    // 5: Lower space on the left
+    ["P", 0.16, 1.00, 0, 320, -4],
+    // 6: Lower space on the right (reserved for worm, interactive)
+    ["P", 0.90, 1.00, 0, 325,  3],
+  ];
+
+  // [key, width at 1440, baseRotation]
   const STICKERS = [
-    ["muse", 112, ["P", 0, 0, -6, 52, -13], ["P", 1, 0, 26, 40, 10]],
-    ["worm", 146, ["P", 1, 1, -22, -112, 9], ["P", 0.86, 1, 0, 60, -6]],
-    ["monk", 92, ["P", 0, 0.5, -60, 10, -5], ["P", 1, 0.55, 34, 0, 6]],
-    ["dog", 158, ["L", 0.5, 1, 0, 110, 4], ["H", 0.3, 1, 0, -80, 3]],
-    ["canister", 78, ["L", 1, 0.55, 58, 0, 14], ["P", 1, 0.28, 36, 0, -9]],
-    ["camera", 168, ["H", 0.075, 1, 0, -122, -8], ["H", 0.2, 1, 0, -200, -8]],
-    ["cobra", 176, ["L", 0.14, 1, 0, 118, -4], ["H", 0.78, 1, 0, -205, -4]],
-    ["keycap", 106, ["H", 0.205, 1, 0, -70, -13], null],
-    ["duck", 118, ["H", 0.315, 1, 0, -150, 6], ["H", 0.5, 1, 0, -130, 7]],
-    ["terminal", 138, ["H", 0.43, 1, 0, -92, -4], ["H", 0.8, 1, 0, -110, -5]],
-    ["mountain", 186, ["H", 0.565, 1, 0, -150, 3], null],
-    ["tent", 128, ["P", 0.5, 1, 0, 64, -3], null],
+    ["camera",   168,  -5],
+    ["cobra",    176,  -4],
+    ["terminal", 138,  -4],
+    ["mountain", 186,   0],
+    ["dog",      158,  -2],
+    ["keycap",   106,  22], // +22 cancels intrinsic tilt in source artwork
+    ["canister",  78,   0],
+    ["muse",     112, -10],
+    ["tent",     128,   0],
+    ["duck",     118,   4],
+    ["worm",     146,   1],
+    ["monk",      92,   0],
   ];
   const narrow = () => innerWidth < 760;
 
   // relax sticker homes: push them off each other and off the type, so any viewport stays tidy.
   // stickers may still overlap a little (they are stickers), and may sit on the photo.
   function spread(items) {
+    const isNarrow = narrow();
     const hr = hero.getBoundingClientRect();
     const rect = (el, shrinkY = 0) => {
       const r = el.getBoundingClientRect();
@@ -438,9 +528,16 @@
         for (const z of zones) push(a, z, true, 1);
         for (const o of items) {
           if (o === a) continue;
-          push(a, { x: o.hx, y: o.hy, w: o.w, h: o.h }, o.moved, 0.8);
+          push(a, { x: o.hx, y: o.hy, w: o.w, h: o.h }, o.moved, isNarrow ? 0.82 : 0.7);
         }
-        a.hx = Math.max(a.w * 0.3, Math.min(W - a.w * 0.3, a.hx));
+        if (isNarrow) {
+          const screenLeft = -hr.left;
+          const screenRight = window.innerWidth - hr.left;
+          a.hx = Math.max(screenLeft + a.w * 0.5 + 4, Math.min(screenRight - a.w * 0.5 - 4, a.hx));
+        } else {
+          const marginX = a.w * 0.3;
+          a.hx = Math.max(marginX, Math.min(W - marginX, a.hx));
+        }
         a.hy = Math.max(a.h * 0.3, Math.min(H - a.h * 0.25, a.hy));
       }
     }
@@ -450,33 +547,74 @@
   function heroStickers() {
     const layer = $("#hero-layer");
     heroTable = makeTable(hero, layer, { trail: true, warp: true, parallax: true });
-    const scale = narrow() ? 0.56 : Math.max(0.8, Math.min(1.1, hero.clientWidth / 1296));
-    const list = STICKERS.filter(([, , , mob]) => !narrow() || mob);
-    const imgs = list.map(([key]) => {
+    const isNarrow = narrow();
+    const a0 = anchors();
+    const vScale = Math.min(1.0, a0.T.h / 280);
+    const scale = isNarrow ? 0.92 : Math.max(0.68, Math.min(1.05, (hero.clientWidth / 1350) * vScale));
+    const shuffle = (arr) => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+
+    let list = [];
+    if (isNarrow) {
+      // Mobile: 7 stickers total. Worm is ALWAYS present (in slot 6, lower-right), plus 6 randomly picked stickers
+      const wormSticker = STICKERS.find(([k]) => k === "worm");
+      const otherStickers = shuffle(STICKERS.filter(([k]) => k !== "worm"));
+      const picked = [...otherStickers.slice(0, 6), wormSticker];
+      list = picked.map(([key, w, rot], i) => {
+        const slot = MOB_SLOTS[i];
+        const r = rot + slot[5] * 0.4 + (Math.random() - 0.5) * 4;
+        const target = [slot[0], slot[1], slot[2], slot[3], slot[4], r];
+        return { key, w, target };
+      });
+    } else {
+      // Desktop: shuffle all 12 stickers and assign them to the 12 organically staggered desk slots
+      const shuffledStickers = shuffle(STICKERS);
+      list = shuffledStickers.map(([key, w, rot], i) => {
+        const slot = DESK_SLOTS[i];
+        const r = rot + slot[3] * 0.4 + (Math.random() - 0.5) * 4;
+        const target = [slot[0], slot[1], slot[2], 0, 0, r];
+        return { key, w, target };
+      });
+    }
+
+    const imgs = list.map(({ key }) => {
       const img = new Image();
       img.src = `assets/stickers/riso-${key}.webp`;
       img.alt = "";
       img.draggable = false;
       return img;
     });
+
     // add them all at once, settle the layout, then slap them down one by one
     Promise.all(imgs.map((img) => img.decode().catch(() => {}))).then(() => {
-      list.forEach(([key, w, desk, mob], i) => {
+      list.forEach(({ key, w, target }, i) => {
         const wrap = document.createElement("div");
         wrap.className = "in";
         wrap.appendChild(imgs[i]);
         const home = () => {
           const a = anchors();
-          const s = (narrow() ? mob : desk) || desk;
-          const A = a[s[0]];
-          return { x: A.l + A.w * s[1] + s[3], y: A.t + A.h * s[2] + s[4], r: s[5] };
+          const A = a[target[0]];
+          return { x: A.l + A.w * target[1] + target[3], y: A.t + A.h * target[2] + target[4], r: target[5] };
         };
         const it = heroTable.add(wrap, home, { width: Math.round(w * scale) });
         it.key = key;
+        if (key === "worm") {
+          it.onClick = () => {
+            if (!wormBusy) summonWorm();
+          };
+        }
       });
       heroTable.setResolve(spread);
       heroTable.relayout();
-      heroTable.items.forEach((it, i) => heroTable.slapItem(it, 0.9 + i * 0.08));
+      // slap them down in randomized order on every page load
+      const slapOrder = shuffle([...heroTable.items]);
+      slapOrder.forEach((it, i) => heroTable.slapItem(it, 0.3 + i * 0.07));
     });
     setTimeout(() => heroTable && heroTable.relayout(), 1200);   // late font metrics
   }
@@ -496,7 +634,9 @@
   });
 
   function summonWorm() {
+    if (wormBusy || !heroTable) return;
     wormBusy = true;
+    heroTable.setLocked(true);
     const worm = document.createElement("div");
     worm.className = "sandworm";
     worm.innerHTML = `<img src="assets/stickers/riso-worm.webp" alt="">`;
@@ -510,7 +650,12 @@
       heroTable.swallow(to, () => {
         worm.classList.remove("up");
         hero.classList.remove("quake");
-        setTimeout(() => { worm.remove(); heroTable.restore(); wormBusy = false; }, 800);
+        setTimeout(() => {
+          worm.remove();
+          heroTable.restore();
+          heroTable.setLocked(false);
+          wormBusy = false;
+        }, 800);
       });
     }, 650);
     console.log("%cThe spice must flow.", "color:#d2321e;font-family:monospace");
@@ -562,14 +707,18 @@
     if (p.waldo) {
       const b = document.createElement("button");
       b.className = "waldo";
-      b.setAttribute("aria-label", "Wait, is that him?");
+      b.setAttribute("aria-label", "Wait, is that Waldo?");
       b.style.left = p.waldo[0] + "%";
       b.style.top = p.waldo[1] + "%";
-      b.innerHTML = WALDO + `<span class="waldo__tag mono">you found him</span>`;
+      b.innerHTML = WALDO + `<span class="waldo__tag mono">you found Waldo!</span>`;
+      let waldoTimer;
       b.addEventListener("click", () => {
+        b.classList.remove("found");
+        void b.offsetWidth;
         b.classList.add("found");
-        console.log("%c( you found him )", "color:#e03131;font-family:monospace");
-        setTimeout(() => b.classList.remove("found"), 2600);
+        console.log("%c( you found Waldo! )", "color:#e03131;font-family:monospace");
+        clearTimeout(waldoTimer);
+        waldoTimer = setTimeout(() => b.classList.remove("found"), 2600);
       });
       fig.firstElementChild.appendChild(b);
     }
@@ -601,26 +750,25 @@
   const WORK = [
     {
       title: "Muse Spark", code: "01A", still: "frame-spark", credit: "Media from ai.meta.com",
-      body: "Meta's frontier model. I build the SFT evaluation and benchmark systems behind it, and MetaCode, its coding harness.",
+      body: "Meta's frontier model. I work on building the supervised fine tuning (SFT) pipelines and benchmarking systems behind it.",
       link: ["Read the announcement", "https://ai.meta.com/blog/introducing-muse-spark-msl/"],
       media: [
-        im("muse-0", 1600, 900, "wide", "Introducing Muse Spark"),
         v("muse-v2", "muse-v2-poster", 1080, 1080), v("muse-v3", "muse-v3-poster", 1080, 1080),
         im("muse-1", 1600, 900, "wide", "Scaling observations from RL training"),
         v("muse-v1", "muse-v1-poster", 1080, 1080), v("muse-v0", "muse-v0-poster", 1080, 1080),
         im("muse-2", 1600, 1600, "", "Held-out codebase perplexity chart"), v("muse-v4", "muse-v4-poster", 1080, 1080),
-        im("muse-4", 1600, 650, "wide", "Benchmark comparison table"),
       ],
     },
     {
       title: "Business AI", code: "02A", still: "frame-bell", credit: "Media from about.fb.com",
-      body: "Measurement for Meta's business AI agents: did the agent actually change a business outcome? That answer cleared the way to general availability.",
+      body: "I worked on Meta's Business AI agents and outcome measurement, allowing for general availability.",
       link: ["Read the announcement", "https://about.fb.com/news/2026/06/meta-business-agent/"],
       media: [
         im("bizai-0", 1536, 864, "wide", "Meta Business Agent responds to customers 24/7"),
         im("bizai-1", 1600, 1393, "third", "Business Agent in Messenger"),
         im("bizai-2", 1600, 1393, "third", "Business Agent in WhatsApp"),
         im("bizai-3", 1600, 1393, "third", "Business Agent in Instagram"),
+        im("bizai-4", 600, 337, "wide", "Business AI expansion in Mexico and on websites"),
       ],
     },
     {
@@ -628,6 +776,8 @@
       body: "Metrics and data flows for business messaging on WhatsApp. Modeled reporting under privacy constraints unblocked $6B in incremental revenue.",
       link: ["Developer docs", "https://developers.facebook.com/documentation/business-messaging/whatsapp/marketing-messages/overview"],
       media: [
+        im("mm-4", 1000, 653, "wide", "Marketing Messages recurring promotions and product updates in Messenger"),
+        im("mm-5", 1024, 464, "wide", "Marketing Messages promotional card deals and catalogs"),
         im("mm-0", 1000, 667, "", "A small business owner preparing orders"),
         im("mm-1", 1000, 667, "", "A customer opening a package at home"),
         im("mm-2", 900, 600, "", "A shop owner in her store"),
@@ -639,6 +789,8 @@
       body: "One consistent view of commerce across many stores, built on HLL sketches, query tuning and re-modeled views that cut months off development.",
       link: ["Developer docs", "https://developers.facebook.com/documentation/ads-commerce/commerce-platform"],
       media: [
+        im("commerce-2", 1024, 565, "wide", "Meta Business Insights performance overview dashboard"),
+        im("commerce-3", 1024, 576, "wide", "Meta Business Suite Insights Results graph"),
         im("commerce-0", 1414, 946, "fit", "A clothing rack in a shop"),
         im("commerce-1", 600, 322, "fit", "A food truck business"),
       ],
