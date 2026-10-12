@@ -12,9 +12,17 @@
     // apply the saved mode before first paint so the page never flashes the wrong light
     (function () {
       var m = null;
-      try { m = localStorage.getItem("vr-mode"); } catch (e) {}
+      try {
+        var p = new URLSearchParams(location.search).get("mode");
+        if (p !== null) m = p === "daylight" ? "" : p;
+        else m = localStorage.getItem("vr-mode");
+      } catch (e) {}
       if (m === null && matchMedia("(prefers-color-scheme: dark)").matches) m = "safe";
-      if (m) document.documentElement.className = m;
+      if (m) {
+        document.documentElement.className = m;
+        var tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) tc.content = m === "silver" ? "#121110" : m === "safe" ? "#0c0403" : "#f1efea";
+      }
     })();
   </script>
   <link rel="preload" href="assets/fonts/redaction-400.woff2" as="font" type="font/woff2" crossorigin>

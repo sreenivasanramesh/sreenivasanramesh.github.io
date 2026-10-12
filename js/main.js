@@ -13,9 +13,22 @@
   const root = document.documentElement;
 
   /* ---------- modes: daylight / silver / safelight ---------- */
+  if (params.has("mode")) {
+    const q = params.get("mode");
+    const targetMode = q === "daylight" ? "" : q;
+    root.classList.remove("silver", "safe");
+    if (targetMode) root.classList.add(targetMode);
+  }
   let mode = root.classList.contains("silver") ? 1 : root.classList.contains("safe") ? 2 : 0;
-  const paintModes = () => $$(".modes button").forEach((b) =>
-    b.setAttribute("aria-pressed", String(["", "silver", "safe"][mode] === b.dataset.mode)));
+  const updateThemeColor = () => {
+    const meta = $('meta[name="theme-color"]');
+    if (meta) meta.content = mode === 1 ? "#121110" : mode === 2 ? "#0c0403" : "#f1efea";
+  };
+  const paintModes = () => {
+    $$(".modes button").forEach((b) =>
+      b.setAttribute("aria-pressed", String(["", "silver", "safe"][mode] === b.dataset.mode)));
+    updateThemeColor();
+  };
   paintModes();
   $$(".modes button").forEach((b) => b.addEventListener("click", () => {
     root.classList.remove("silver", "safe");

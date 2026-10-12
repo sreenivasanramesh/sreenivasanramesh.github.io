@@ -36,13 +36,16 @@
   --ease: cubic-bezier(.2, .7, .2, 1);
 }
 .silver {
-  --paper: #ebeae6; --ink: #121212; --dim: #6b6b6b; --red: #525252; --rule: #d4d3cf; --amber: #bdbdbd; --print: #f7f7f5;
+  --paper: #121110; --ink: #f1efea; --dim: #8e8b85; --red: #dedbd4; --rule: #2c2a27; --amber: #9c9993; --print: #1c1b1a; --film: #080706;
   --img: grayscale(1) contrast(1.06); --ghost: grayscale(1);
+  --grain-blend: screen; --grain-alpha: .10;
+  color-scheme: dark;
 }
 .safe {
   --paper: #0c0403; --ink: #e2412a; --dim: #94301f; --red: #ff5a3c; --rule: #2a0d08; --film: #000; --amber: #b8321f; --print: #1a0806;
   --img: url(#safe) brightness(.74); --ghost: url(#safe);
   --grain-blend: screen; --grain-alpha: .11;
+  color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -137,7 +140,7 @@ main { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .st:hover img { transform: scale(1.04) rotate(-1deg); }
 .st.ghost { pointer-events: none; opacity: 0; mix-blend-mode: multiply; }
 .st.ghost img { filter: var(--ghost); transition: none; }
-.safe .st.ghost { mix-blend-mode: screen; }
+.safe .st.ghost, .silver .st.ghost { mix-blend-mode: screen; }
 
 /* the worm that answers the thumper */
 .sandworm {
@@ -250,7 +253,7 @@ h2 { grid-column: 3 / -1; margin: 0 0 28px; font: 400 clamp(44px, 4.4vw, 64px) /
 .shai:hover svg { transform: translateY(-3px) rotate(-4deg); }
 .shai:focus-visible { outline: 1px solid var(--red); outline-offset: 6px; }
 .safe .shai svg { filter: url(#safe); }
-.silver .shai svg { filter: grayscale(1); }
+.silver .shai svg { filter: grayscale(1) brightness(1.25); }
 
 /* ---------- dialogs ---------- */
 dialog { border: 0; padding: 0; color: var(--ink); background: transparent; max-width: none; max-height: none; }

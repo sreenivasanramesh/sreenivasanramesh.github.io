@@ -42,8 +42,8 @@
     const isSilver = document.documentElement.classList.contains("silver");
     const isSafe = document.documentElement.classList.contains("safe");
     if (isSilver) {
-      // in B&W / silver gelatin mode, map red accent to a rich silver tone
-      red = [80, 80, 80];
+      // in B&W / silver gelatin dark mode, map red accent to a bright silver tone
+      red = [222, 219, 212];
     } else if (isSafe) {
       // safelight bright red accent (avoid waiting on 1.4s CSS transition)
       red = [255, 90, 60];
