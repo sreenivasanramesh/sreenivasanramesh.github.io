@@ -11,6 +11,7 @@
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const params = new URLSearchParams(location.search);
   const root = document.documentElement;
+  let converted = false;
 
   /* ---------- modes: daylight / silver / safelight ---------- */
   if (params.has("mode")) {
@@ -22,7 +23,10 @@
   let mode = root.classList.contains("silver") ? 1 : root.classList.contains("safe") ? 2 : 0;
   const updateThemeColor = () => {
     const meta = $('meta[name="theme-color"]');
-    if (meta) meta.content = mode === 1 ? "#121110" : mode === 2 ? "#0c0403" : "#f1efea";
+    if (meta) {
+      if (mode === 2) meta.content = converted ? "#03060f" : "#0c0403";
+      else meta.content = mode === 1 ? "#121110" : "#f1efea";
+    }
   };
   const paintModes = () => {
     $$(".modes button").forEach((b) =>
@@ -35,6 +39,11 @@
     if (b.dataset.mode) root.classList.add(b.dataset.mode);
     mode = ["", "silver", "safe"].indexOf(b.dataset.mode);
     try { localStorage.setItem("vr-mode", b.dataset.mode); } catch (e) { /* private mode */ }
+    if (converted) {
+      const isSafe = root.classList.contains("safe");
+      root.style.setProperty("--red", isSafe ? "#60a5fa" : "#2f62d6");
+      root.style.setProperty("--amber", isSafe ? "#38bdf8" : "#4a88f7");
+    }
     paintModes();
   }));
 
@@ -74,7 +83,7 @@
   const gl = cv.getContext("webgl", { premultipliedAlpha: false, antialias: false });
   const FRAG = `
     precision highp float;
-    uniform sampler2D tex; uniform vec2 res; uniform float t, seed; uniform int mode;
+    uniform sampler2D tex; uniform vec2 res; uniform float t, seed; uniform int mode, converted;
     varying vec2 uv;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     float lum(vec3 c){ return dot(c, vec3(.299, .587, .114)); }
@@ -89,13 +98,19 @@
           h += smoothstep(.72, .98, lum(texture2D(tex, uv + o).rgb));
         }
       }
-      c += vec3(1., .3, .12) * (h / 32.) * .55;
+      vec3 halo = (mode == 2 && converted == 1) ? vec3(.15, .4, 1.) : vec3(1., .3, .12);
+      c += halo * (h / 32.) * .55;
       float L = lum(c);
       if (mode == 1) c = vec3(pow(L, 1.08)) * vec3(1., .99, .965);
-      if (mode == 2) c = vec3(L, L * .2, L * .1) * .8;
+      if (mode == 2) {
+        if (converted == 1) c = vec3(L * .08, L * .22, L) * .85;
+        else c = vec3(L, L * .2, L * .1) * .8;
+      }
       // development: density builds, darkest tones arrive first
       float k = smoothstep(0., 1., clamp((t * 1.45 - L * .62) / .38, 0., 1.));
-      vec3 paper = mode == 2 ? vec3(.26, .05, .03) : mode == 1 ? vec3(.922, .918, .902) : vec3(.945, .937, .918);
+      vec3 paper = (mode == 2)
+        ? (converted == 1 ? vec3(.03, .06, .20) : vec3(.26, .05, .03))
+        : (mode == 1 ? vec3(.922, .918, .902) : vec3(.945, .937, .918));
       c = mix(paper, c, k);
       // grain: re-seeded every frame, strongest in the midtones
       float n = hash(floor(uv * res) + seed) - .5;
@@ -120,7 +135,7 @@
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
       gl.enableVertexAttribArray(0);
       gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-      ["res", "t", "seed", "mode"].forEach((n) => (U[n] = gl.getUniformLocation(pr, n)));
+      ["res", "t", "seed", "mode", "converted"].forEach((n) => (U[n] = gl.getUniformLocation(pr, n)));
     }
   }
   const photo = new Image();
@@ -161,6 +176,7 @@
         gl.uniform1f(U.t, t);
         gl.uniform1f(U.seed, reduce ? 1 : Math.floor(now / 41) % 97);
         gl.uniform1i(U.mode, mode);
+        gl.uniform1i(U.converted, converted ? 1 : 0);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
       } else if (!glOk && !drawn2d) {
         cv.getContext("2d").drawImage(photo, 0, 0, cv.width, cv.height);
@@ -959,12 +975,19 @@
   };
 
   // wololo: the monk walks on, casts, every grease-pencil mark changes team, then he walks off
-  let converted = false;
   let monkBusy = false;
   const convert = () => {
     converted = !converted;
-    if (converted) root.style.setProperty("--red", "#2f62d6");
-    else root.style.removeProperty("--red");
+    root.classList.toggle("converted", converted);
+    if (converted) {
+      const isSafe = root.classList.contains("safe");
+      root.style.setProperty("--red", isSafe ? "#60a5fa" : "#2f62d6");
+      root.style.setProperty("--amber", isSafe ? "#38bdf8" : "#4a88f7");
+    } else {
+      root.style.removeProperty("--red");
+      root.style.removeProperty("--amber");
+    }
+    updateThemeColor();
   };
   const wololo = () => {
     if (reduce || monkBusy) { convert(); playWololo(); return; }

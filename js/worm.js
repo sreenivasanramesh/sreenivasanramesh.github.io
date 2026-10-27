@@ -41,12 +41,13 @@
     let red = parseColor(cs.getPropertyValue("--red"));
     const isSilver = document.documentElement.classList.contains("silver");
     const isSafe = document.documentElement.classList.contains("safe");
+    const isConverted = document.documentElement.classList.contains("converted");
     if (isSilver) {
       // in B&W / silver gelatin dark mode, map red accent to a bright silver tone
       red = [222, 219, 212];
     } else if (isSafe) {
-      // safelight bright red accent (avoid waiting on 1.4s CSS transition)
-      red = [255, 90, 60];
+      // safelight bright accent (avoid waiting on 1.4s CSS transition)
+      red = isConverted ? [96, 165, 250] : [255, 90, 60];
     }
     const dark = (paper[0] + paper[1] + paper[2]) / 3 < 100;
     C = {

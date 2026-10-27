@@ -12,6 +12,7 @@
 @font-face { font-family: "Switzer"; font-weight: 500; src: url(../assets/fonts/switzer-500.woff2) format("woff2"); font-display: swap; }
 
 @property --red { syntax: "<color>"; inherits: true; initial-value: #d2321e; }
+@property --amber { syntax: "<color>"; inherits: true; initial-value: #e8892b; }
 
 :root {
   --paper: #f1efea;
@@ -47,9 +48,15 @@
   --grain-blend: screen; --grain-alpha: .11;
   color-scheme: dark;
 }
+.safe.converted {
+  --paper: #03060f; --ink: #3b82f6; --dim: #1d4ed8; --red: #60a5fa; --rule: #0f172a; --film: #000; --amber: #38bdf8; --print: #050b18;
+  --img: url(#safeblue) brightness(.74); --ghost: url(#safeblue);
+  --grain-blend: screen; --grain-alpha: .11;
+  color-scheme: dark;
+}
 
 *, *::before, *::after { box-sizing: border-box; }
-html { background: var(--paper); color: var(--ink); transition: background-color .6s, color .6s, --red 1.4s ease; scroll-behavior: smooth; }
+html { background: var(--paper); color: var(--ink); transition: background-color .6s, color .6s, --red 1.4s ease, --amber 1.4s ease; scroll-behavior: smooth; }
 body { margin: 0; font: 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; overflow-x: clip; }
 button { font: inherit; color: inherit; }
 a { color: inherit; }
@@ -175,7 +182,7 @@ h2 { grid-column: 3 / -1; margin: 0 0 28px; font: 400 clamp(44px, 4.4vw, 64px) /
 .fr img { width: 100%; height: 100%; object-fit: cover; filter: var(--img) url(#film); transition: transform .6s var(--ease); }
 .fr img.px, .pd__still.px { image-rendering: pixelated; }
 .fr:hover img, .fr:focus-visible img { transform: scale(1.04); }
-.fr .edge { display: flex; justify-content: space-between; gap: 8px; margin-top: 9px; color: var(--amber); opacity: .9; white-space: nowrap; font-size: 10.5px; letter-spacing: .05em; }
+.fr .edge { display: flex; justify-content: space-between; gap: 8px; margin-top: 9px; color: var(--amber); opacity: .9; white-space: nowrap; font-size: 10.5px; letter-spacing: .05em; transition: color 1.4s ease; }
 .fr .edge span:last-child { flex: none; }
 .fr .edge span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .loop { position: absolute; inset: -16px -12px -24px; width: calc(100% + 24px); height: calc(100% + 40px); pointer-events: none; overflow: visible; }
@@ -249,7 +256,7 @@ h2 { grid-column: 3 / -1; margin: 0 0 28px; font: 400 clamp(44px, 4.4vw, 64px) /
 .footer { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; margin: 160px 0 0; padding: 28px 0 36px; border-top: 1px solid var(--rule); color: var(--dim); }
 .shai { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; color: var(--dim); transition: color .2s; }
 .shai svg { transition: transform .3s var(--ease); }
-.shai:hover { color: var(--ink); }
+.shai:hover { color: var(--red); }
 .shai:hover svg { transform: translateY(-3px) rotate(-4deg); }
 .shai:focus-visible { outline: 1px solid var(--red); outline-offset: 6px; }
 .safe .shai svg { filter: url(#safe); }
@@ -321,6 +328,16 @@ dialog::backdrop { background: color-mix(in srgb, var(--paper) 86%, transparent)
   -webkit-mask: linear-gradient(to right, transparent, #000); mask: linear-gradient(to right, transparent, #000);
 }
 .puff { position: fixed; z-index: 69; width: 22px; height: 22px; border-radius: 50%; pointer-events: none; background: color-mix(in srgb, var(--ink) 22%, var(--paper)); filter: url(#wax); }
+
+/* ---------- wololo conversion: team blue ---------- */
+.converted { --ghost: url(#bluetint); }
+.converted .st img { filter: var(--img) url(#wolo-stickers) drop-shadow(0 5px 6px rgba(20, 14, 8, .2)); }
+.converted .wave { filter: var(--img) url(#wolo-stickers) drop-shadow(0 4px 5px rgba(20, 14, 8, .2)); }
+.converted .sandworm img { filter: var(--img) url(#wolo-stickers) drop-shadow(0 10px 16px rgba(20, 14, 8, .25)); }
+.converted .monk-run img { filter: var(--img) url(#wolo-stickers) drop-shadow(0 6px 6px rgba(20, 14, 8, .25)); }
+.converted .cobra-run img { filter: var(--img) url(#wolo-stickers) drop-shadow(0 6px 6px rgba(20, 14, 8, .25)); }
+.converted .shai svg { filter: var(--img) url(#wolo-stickers); }
+.safe.converted .shai svg { filter: url(#safeblue); }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1100px) {

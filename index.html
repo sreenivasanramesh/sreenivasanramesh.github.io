@@ -46,10 +46,42 @@
     </filter>
     <!-- safelight: everything collapses to red luminance -->
     <filter id="safe" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".3 .59 .11 0 0  .06 .12 .02 0 0  .03 .06 .01 0 0  0 0 0 1 0"/></filter>
+    <!-- safelight blue: everything collapses to blue luminance in converted state -->
+    <filter id="safeblue" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".03 .06 .01 0 0  .08 .16 .03 0 0  .3 .59 .11 0 0  0 0 0 1 0"/></filter>
     <!-- exposure-trail tint -->
     <filter id="redtint" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .86  .1 .2 .04 0 .05  .06 .12 .02 0 .03  0 0 0 1 0"/></filter>
+    <!-- exposure-trail blue tint for converted state -->
+    <filter id="bluetint" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .18  .1 .2 .04 0 .38  0 0 0 0 .84  0 0 0 1 0"/></filter>
     <!-- grease pencil: waxy, uneven edge -->
     <filter id="wax"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2"/><feDisplacementMap in="SourceGraphic" scale="3.5"/></filter>
+    <!-- wololo: converts riso red to blue (#2f62d6 palette), strictly preserving all other colors/paper/ink -->
+    <filter id="wolo-stickers" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="matrix" values="
+        0.22 0 0 0 0
+        0.46 0 0 0 0
+        1.02 0 0 0 0
+        0    0 0 1 0" result="blueGraphic"/>
+      <feColorMatrix in="SourceGraphic" type="matrix" values="
+        1 -1  0 0 0
+        1 -1  0 0 0
+        1 -1  0 0 0
+        0  0  0 1 0" result="rmg"/>
+      <feColorMatrix in="SourceGraphic" type="matrix" values="
+        1  0 -1 0 0
+        1  0 -1 0 0
+        1  0 -1 0 0
+        0  0  0 1 0" result="rmb"/>
+      <feBlend in="rmg" in2="rmb" mode="darken" result="minDiff"/>
+      <feColorMatrix in="minDiff" type="matrix" values="
+        0 0 0 0 0
+        0 0 0 0 0
+        0 0 0 0 0
+        3.5 0 0 0 -0.6" result="maskAlpha"/>
+      <feComposite in="maskAlpha" in2="SourceGraphic" operator="in" result="cleanMask"/>
+      <feComposite in="blueGraphic" in2="cleanMask" operator="in" result="blueOnly"/>
+      <feComposite in="SourceGraphic" in2="cleanMask" operator="out" result="nonRedGraphic"/>
+      <feComposite in="blueOnly" in2="nonRedGraphic" operator="over"/>
+    </filter>
   </svg>
 
   <div class="wrap">
