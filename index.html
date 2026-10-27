@@ -101,11 +101,15 @@
     <main id="top">
       <!-- ============ HERO: the light table ============ -->
       <section class="hero" id="hero" aria-label="Intro">
-        <h1 class="name" id="name"><span class="greet" id="hi">Hi, I'm <img class="wave" id="wave" src="assets/stickers/riso-wave.webp" alt="" width="60" height="60" draggable="false"></span><span id="name-text">Vasan</span></h1>
+        <h1 class="name" id="name"><span class="greet" id="hi">Hi, I'm <img class="wave" id="wave" src="assets/stickers/riso-wave.webp" alt="" width="60" height="60" draggable="false"></span> <span id="name-text">Vasan</span></h1>
         <p class="line" id="line">Software developer. Film developer. Happiest somewhere with no signal.</p>
         <figure class="print" id="print">
-          <canvas id="print-canvas" role="img" aria-label="A dog on a trail below Mt. Baker, a snowy volcano, with an alpine lake in the valley"></canvas>
-          <figcaption class="mono"><span>Mt. Baker · 8×12</span><span id="timer">Dev 0:00</span></figcaption>
+          <canvas id="print-canvas" role="img" tabindex="0" title="Click to develop print" aria-label="A dog on a trail below Mt. Baker, a snowy volcano, with an alpine lake in the valley"></canvas>
+          <figcaption class="mono">
+            <span>Mt. Baker · 8×12</span>
+            <span class="print__hint" aria-hidden="true">click to develop</span>
+            <span id="timer">Dev 0:00</span>
+          </figcaption>
         </figure>
         <div class="layer" id="hero-layer" aria-hidden="true"></div>
       </section>
@@ -118,7 +122,109 @@
       </section>
 
     <div class="strip" id="strip">
-      <div class="frames" id="frames"></div>
+      <div class="frames" id="frames">
+        <article class="fr" data-code="01A">
+          <button type="button" class="fr__card-btn" aria-label="Open Muse Spark details">
+            <div class="pic">
+              <img src="assets/work/frame-spark.webp" alt="Muse Spark project preview" loading="lazy" width="960" height="640">
+            </div>
+            <svg class="loop" viewBox="0 0 300 220" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M60 20 C138 4 264 7 285 66 C303 128 276 205 153 209 C39 213 6 158 15 97 C21 46 81 13 180 18"/></svg>
+          </button>
+          <div class="edge mono">
+            <h3 class="fr__title">Muse Spark</h3>
+            <span>▸ 01A</span>
+          </div>
+          <p class="fr__desc">Meta's frontier model. I work on building the supervised fine tuning (SFT) pipelines and benchmarking systems behind it.</p>
+          <div class="fr__actions mono">
+            <a class="fr__link" href="https://ai.meta.com/blog/introducing-muse-spark-msl/" target="_blank" rel="noopener noreferrer" aria-label="Read Muse Spark announcement">Announcement ↗</a>
+          </div>
+        </article>
+
+        <article class="fr" data-code="02A">
+          <button type="button" class="fr__card-btn" aria-label="Open Business AI details">
+            <div class="pic">
+              <img src="assets/work/frame-bell.webp" alt="Business AI project preview" loading="lazy" width="960" height="640">
+            </div>
+            <svg class="loop" viewBox="0 0 300 220" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M60 20 C138 4 264 7 285 66 C303 128 276 205 153 209 C39 213 6 158 15 97 C21 46 81 13 180 18"/></svg>
+          </button>
+          <div class="edge mono">
+            <h3 class="fr__title">Business AI</h3>
+            <span>▸ 02A</span>
+          </div>
+          <p class="fr__desc">I worked on Meta's Business AI agents and outcome measurement, allowing for general availability.</p>
+          <div class="fr__actions mono">
+            <a class="fr__link" href="https://about.fb.com/news/2026/06/meta-business-agent/" target="_blank" rel="noopener noreferrer" aria-label="Read Business AI announcement">Announcement ↗</a>
+          </div>
+        </article>
+
+        <article class="fr" data-code="03A">
+          <button type="button" class="fr__card-btn" aria-label="Open Marketing Messages details">
+            <div class="pic">
+              <img src="assets/work/frame-letters.webp" alt="Marketing Messages project preview" loading="lazy" width="960" height="640">
+            </div>
+            <svg class="loop" viewBox="0 0 300 220" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M60 20 C138 4 264 7 285 66 C303 128 276 205 153 209 C39 213 6 158 15 97 C21 46 81 13 180 18"/></svg>
+          </button>
+          <div class="edge mono">
+            <h3 class="fr__title">Marketing Messages</h3>
+            <span>▸ 03A</span>
+          </div>
+          <p class="fr__desc">Metrics and data flows for business messaging on WhatsApp. Modeled reporting under privacy constraints unblocked $6B in incremental revenue.</p>
+          <div class="fr__actions mono">
+            <a class="fr__link" href="https://developers.facebook.com/documentation/business-messaging/whatsapp/marketing-messages/overview" target="_blank" rel="noopener noreferrer" aria-label="Read Marketing Messages developer docs">Developer docs ↗</a>
+          </div>
+        </article>
+
+        <article class="fr" data-code="04A">
+          <button type="button" class="fr__card-btn" aria-label="Open Commerce Insights details">
+            <div class="pic">
+              <img src="assets/work/frame-bags.webp" alt="Commerce Insights project preview" loading="lazy" width="960" height="640">
+            </div>
+            <svg class="loop" viewBox="0 0 300 220" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M60 20 C138 4 264 7 285 66 C303 128 276 205 153 209 C39 213 6 158 15 97 C21 46 81 13 180 18"/></svg>
+          </button>
+          <div class="edge mono">
+            <h3 class="fr__title">Commerce Insights</h3>
+            <span>▸ 04A</span>
+          </div>
+          <p class="fr__desc">One consistent view of commerce across many stores, built on HLL sketches, query tuning and re-modeled views that cut months off development.</p>
+          <div class="fr__actions mono">
+            <a class="fr__link" href="https://developers.facebook.com/documentation/ads-commerce/commerce-platform" target="_blank" rel="noopener noreferrer" aria-label="Read Commerce Insights developer docs">Developer docs ↗</a>
+          </div>
+        </article>
+
+        <article class="fr" data-code="05A">
+          <button type="button" class="fr__card-btn" aria-label="Open Ads Measurement details">
+            <div class="pic">
+              <img src="assets/work/frame-tape.webp" alt="Ads Measurement project preview" loading="lazy" width="960" height="640">
+            </div>
+            <svg class="loop" viewBox="0 0 300 220" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M60 20 C138 4 264 7 285 66 C303 128 276 205 153 209 C39 213 6 158 15 97 C21 46 81 13 180 18"/></svg>
+          </button>
+          <div class="edge mono">
+            <h3 class="fr__title">Ads Measurement</h3>
+            <span>▸ 05A</span>
+          </div>
+          <p class="fr__desc">A graph data-model redesign and Spark tuning for measurement pipelines at ads scale. Compute down 95%, storage down 96%.</p>
+          <div class="fr__actions mono">
+            <a class="fr__link" href="https://developers.facebook.com/documentation/ads-commerce/conversions-api" target="_blank" rel="noopener noreferrer" aria-label="Read Ads Measurement developer docs">Developer docs ↗</a>
+          </div>
+        </article>
+
+        <article class="fr" data-code="06A">
+          <button type="button" class="fr__card-btn" aria-label="Play Arrakis Runner mini-game">
+            <div class="pic">
+              <img src="assets/work/frame-game.webp" class="px" alt="Arrakis Runner game preview" loading="lazy" width="960" height="640">
+            </div>
+            <svg class="loop" viewBox="0 0 300 220" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M60 20 C138 4 264 7 285 66 C303 128 276 205 153 209 C39 213 6 158 15 97 C21 46 81 13 180 18"/></svg>
+          </button>
+          <div class="edge mono">
+            <h3 class="fr__title">Arrakis Runner</h3>
+            <span>▸ 06A</span>
+          </div>
+          <p class="fr__desc">A side-scrolling worm-runner mini-game built with HTML5 canvas and riso grain textures.</p>
+          <div class="fr__actions mono">
+            <button type="button" class="fr__link fr__worm-btn" aria-label="Launch Arrakis Runner game">Play game ▸</button>
+          </div>
+        </article>
+      </div>
     </div>
 
     <section class="section clock" id="off-the-clock">
@@ -127,9 +233,9 @@
         <h2>Off the clock</h2>
         <p class="clock__lede">
           When I'm not at a keyboard I'm usually somewhere with no signal:
-          <button class="toss" data-print="hike">hiking PNW trails</button>,
-          <button class="toss" data-print="camp">camping by alpine lakes</button>,
-          <button class="toss" data-print="paddle">paddle boarding</button> on glassy water,
+          <span class="toss" role="button" tabindex="0" data-print="hike">hiking PNW trails</span>,
+          <span class="toss" role="button" tabindex="0" data-print="camp">camping by alpine lakes</span>,
+          <span class="toss" role="button" tabindex="0" data-print="paddle">paddle boarding</span> on glassy water,
           and shooting most of it on film.
         </p>
         <p class="body">Evenings go to a lot of Balatro and one more game of Age of Empires II. <em class="wolo-word">Wololo.</em></p>
@@ -178,16 +284,16 @@
     <div class="pd">
       <button class="pd__close mono" id="pd-close">Close ×</button>
       <div class="pd__head">
-        <img class="pd__still" id="pd-still" alt="">
+        <img class="pd__still" id="pd-still" src="assets/work/frame-spark.webp" alt="Muse Spark project preview">
         <div class="pd__text">
-          <span class="mono pd__edge" id="pd-edge"></span>
-          <h3 id="pd-title"></h3>
-          <p id="pd-body"></p>
-          <p id="pd-link"></p>
+          <span class="mono pd__edge" id="pd-edge">Frame 01A</span>
+          <h3 id="pd-title">Muse Spark</h3>
+          <p id="pd-body">Meta's frontier model. I work on building the supervised fine tuning (SFT) pipelines and benchmarking systems behind it.</p>
+          <p id="pd-link"><a href="https://ai.meta.com/blog/introducing-muse-spark-msl/" target="_blank" rel="noopener noreferrer">Read the announcement</a></p>
         </div>
       </div>
       <div class="pd__media" id="pd-media"></div>
-      <p class="pd__credit mono" id="pd-credit"></p>
+      <p class="pd__credit mono" id="pd-credit">Media from ai.meta.com</p>
     </div>
   </dialog>
 
@@ -197,10 +303,11 @@
       <div class="wd__head mono">
         <span class="wd__title">Arrakis Runner</span>
         <span class="wd__hint">space or tap to jump</span>
+        <span class="wd__esc" aria-hidden="true">esc to close</span>
         <button class="wd__mute" id="worm-mute">Sound [on]</button>
         <button class="wd__close" id="worm-close">Close ×</button>
       </div>
-      <canvas class="wd__canvas" id="worm-canvas" width="720" height="220"></canvas>
+      <canvas class="wd__canvas" id="worm-canvas" width="720" height="220" role="img" tabindex="0" aria-label="Arrakis Runner game canvas. Press Space or Up Arrow to jump, collect thumpers, and eat crew."></canvas>
       <div class="wd__foot mono">
         <span id="worm-score">0000</span>
         <span>bless the maker and his water</span>

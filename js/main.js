@@ -45,6 +45,7 @@
       root.style.setProperty("--amber", isSafe ? "#38bdf8" : "#4a88f7");
     }
     paintModes();
+    develop();
   }));
 
   /* ---------- hero line: a 50/50 split between two drafts ---------- */
@@ -163,12 +164,29 @@
     develop();
     heroStickers();
     setTimeout(waveHello, reduce ? 0 : DEV_MS + 200);
+
+    const printFig = $("#print");
+    const printHint = $(".print__hint");
+    if (printFig) {
+      const triggerDevelop = () => {
+        develop();
+      };
+      printFig.addEventListener("click", triggerDevelop);
+      cv.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          triggerDevelop();
+        }
+      });
+    }
+
     let last = 0;
     let drawn2d = false;
     const frame = (now) => {
       const t = Math.min(1, Math.max(0, (now - devStart) / DEV_MS));
       const secs = Math.round(t * 90);
       timer.textContent = t < 1 ? `Dev ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}` : "Dev 1:30 · fixed";
+      if (printHint) printHint.textContent = t < 1 ? "developing..." : "click to develop";
       // grain ticks at 24fps, like film through a gate
       if (glOk && heroVisible && now - last > 41) {
         last = now;
@@ -771,7 +789,16 @@
       clockTable.slap(0.16, 0.05);
     });
   }, { threshold: 0.2 }).observe(clock);
-  $$(".toss").forEach((b) => b.addEventListener("click", () => clockTable.nudge(printItems[b.dataset.print])));
+  $$(".toss").forEach((b) => {
+    const toss = () => clockTable.nudge(printItems[b.dataset.print]);
+    b.addEventListener("click", toss);
+    b.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toss();
+      }
+    });
+  });
 
   /* ---------- showcase: contact sheet + print dialog ---------- */
   const v = (src, poster, w, h, cls = "") => ({ type: "video", src, poster, w, h, cls });
@@ -836,7 +863,6 @@
     { title: "Arrakis Runner", code: "06A", still: "frame-game", game: true },
   ];
 
-  const LOOP = '<svg class="loop" viewBox="0 0 300 220" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M60 20 C138 4 264 7 285 66 C303 128 276 205 153 209 C39 213 6 158 15 97 C21 46 81 13 180 18"/></svg>';
   const frames = $("#frames");
   const dlg = $("#print-dialog");
   const still = $("#pd-still");
@@ -898,25 +924,46 @@
       dlg.close();
       if (openImg) openImg.style.viewTransitionName = "print";
     });
-    const done = () => { if (openImg) { openImg.style.viewTransitionName = ""; openImg.closest(".fr").focus({ preventScroll: true }); } };
+    const done = () => { if (openImg) { openImg.style.viewTransitionName = ""; const f = openImg.closest(".fr"); (f?.querySelector(".fr__card-btn") || f)?.focus({ preventScroll: true }); } };
     t ? t.finished.then(done, done) : done();
   };
   $("#pd-close").addEventListener("click", closePrint);
   dlg.addEventListener("cancel", (e) => { e.preventDefault(); closePrint(); });
   dlg.addEventListener("click", (e) => { if (e.target === dlg) closePrint(); });
 
-  WORK.forEach((w) => {
-    const b = document.createElement("button");
-    b.className = "fr";
-    b.setAttribute("aria-label", w.game ? "Play Arrakis Runner" : `Open ${w.title}`);
-    b.innerHTML = `<div class="pic"><img src="assets/work/${w.still}.webp" alt="" ${w.game ? 'class="px"' : ""} loading="lazy" width="960" height="640"></div>` +
-      `<div class="edge mono"><span>${w.title}</span><span>▸ ${w.code}</span></div>${LOOP}`;
-    b.addEventListener("click", () => {
-      if (w.game) { if (window.__worm) window.__worm.open(b); return; }
-      openPrint(w, $("img", b));
+  const cardEls = $$(".fr", frames);
+  cardEls.forEach((card, i) => {
+    const w = WORK[i];
+    if (!w) return;
+    const img = $("img", card);
+    const trigger = $(".fr__card-btn", card) || card;
+
+    const handleOpen = () => {
+      if (w.game) {
+        if (window.__worm) window.__worm.open(trigger);
+        return;
+      }
+      openPrint(w, img);
+    };
+
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      handleOpen();
     });
-    frames.appendChild(b);
+
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("a, .fr__card-btn")) return;
+      handleOpen();
+    });
   });
+
+  const wormBtn = $(".fr__worm-btn", frames);
+  if (wormBtn) {
+    wormBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (window.__worm) window.__worm.open(wormBtn);
+    });
+  }
 
   /* ---------- say hi: click to copy ---------- */
   const email = $("#email");
