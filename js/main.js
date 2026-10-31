@@ -957,14 +957,6 @@
     });
   });
 
-  const wormBtn = $(".fr__worm-btn", frames);
-  if (wormBtn) {
-    wormBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (window.__worm) window.__worm.open(wormBtn);
-    });
-  }
-
   /* ---------- say hi: click to copy ---------- */
   const email = $("#email");
   const emailState = $(".email__state", email);

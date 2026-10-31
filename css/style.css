@@ -204,6 +204,7 @@ h2 { grid-column: 3 / -1; margin: 0 0 28px; font: 400 clamp(44px, 4.4vw, 64px) /
   justify-content: flex-start;
   min-width: 0;
   color: var(--amber);
+  cursor: pointer;
 }
 .fr__card-btn {
   all: unset;
@@ -231,7 +232,7 @@ h2 { grid-column: 3 / -1; margin: 0 0 28px; font: 400 clamp(44px, 4.4vw, 64px) /
   color: inherit;
 }
 .fr__desc {
-  margin: 8px 0 12px;
+  margin: 8px 0 0;
   font-size: 12px;
   line-height: 1.45;
   color: #a8a49c;
@@ -241,33 +242,6 @@ h2 { grid-column: 3 / -1; margin: 0 0 28px; font: 400 clamp(44px, 4.4vw, 64px) /
   overflow: hidden;
 }
 .safe .fr__desc { color: var(--dim); }
-.fr__actions {
-  margin-top: auto;
-  font-size: 11px;
-  letter-spacing: .03em;
-}
-.fr__link {
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--amber);
-  cursor: pointer;
-  text-decoration: none;
-  position: relative;
-  z-index: 2;
-  padding: 2px 0;
-  transition: color .2s ease;
-}
-.fr__link:hover, .fr__link:focus-visible {
-  color: var(--red);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.fr__link:focus-visible {
-  outline: 1px solid var(--red);
-  outline-offset: 3px;
-}
 .fr__card-btn .loop {
   position: absolute;
   inset: -14px -10px;
