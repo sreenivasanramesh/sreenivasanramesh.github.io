@@ -231,17 +231,6 @@ h2 { grid-column: 3 / -1; margin: 0 0 28px; font: 400 clamp(44px, 4.4vw, 64px) /
   text-overflow: ellipsis;
   color: inherit;
 }
-.fr__desc {
-  margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: #a8a49c;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.safe .fr__desc { color: var(--dim); }
 .fr__card-btn .loop {
   position: absolute;
   inset: -14px -10px;
